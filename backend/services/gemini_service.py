@@ -160,22 +160,25 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
 
         # Update prompt to be compatible with Image-to-Image logic
         analysis_prompt = [
-            "Role: Professional Fashion Director.",
-            "Task: Deep-Fake Simulation Planning.",
-            "STEP 1: Analyze Image 1 (User) for Body Ratios & Background.",
-            "STEP 2: Analyze Image 2 (Model) for Clothing Details.",
-            "STEP 3: Compare & Critique (Text).",
+            "Role: High-level Fashion AI Expert specializing in Virtual Try-On.",
+            "Task: Create a master prompt for an Image Generator to perform a 'Body Swap' Virtual Fitting.",
+            "STEP 1 [User Analysis]: Analyze Image 1 (User). Identify physical specs: estimated Height, Weight, Body Type, and Proportions.",
+            "STEP 2 [Model Analysis]: Analyze Image 2 (Model).",
+            "   - Identify 'Model Person' specs: Height, Weight, Body Type, Proportions.",
+            "   - Identify 'Model Pose': Describe the exact pose of the model.",
+            "   - Identify 'Model Clothing': Note the clothing's exact cut, texture, and size.",
+            "STEP 3 [Critique]: textual comparison.",
             f"   - Language: {lang_target}",
-            "   - Tone: Sarcastic but useful fashion advice.",
-            "STEP 4: Create a highly detailed text prompt for Imagen 3 Image generation.",
-            "- The prompt should describe a photorealistic image of a person who looks like the user in Image 1, wearing the EXACT clothes from Image 2.",
-            "- Describe the User's physical features (gender, hair, pose, body type) and the Model's clothing (color, type, texture) in detail.",
-            "- Mention 'photorealistic, 8k, high quality'.",
-            "- Keep the background description from Image 1.",
+            "   - Tone: Fact-based, Humorous.",
+            "STEP 4 [Gen Prompt Creation]: Write a prompt for the Image Generator following this logic:",
+            "   - Logic: Replace the 'Model Person' (specs from Step 2) with the 'User Person' (specs from Step 1).",
+            "   - Pose: MUST Maintain the EXACT POSE of Image 2 (Model).",
+            "   - Visualization: A person with User's body specs (Height/Weight/Type) standing in Model's exact Pose, wearing Model's Clothes.",
+            "   - Quality: Photorealistic, High Resolution.",
             "Return JSON: {",
             "  'user_heads': number, 'model_heads': number,",
-            f"  'comment': string (Savage {lang_target} Critique),",
-            "  'gen_prompt': string (English Prompt)"
+            f"  'comment': string (Fact-based Humorous {lang_target} Critique),",
+            "  'gen_prompt': string (The Detailed English Prompt described in Step 4)"
             "}",
             img_user, img_model
         ]
