@@ -29,7 +29,7 @@ def get_gemini_model(model_name="gemini-2.5-flash"):
     except:
         return None
 
-def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads):
+def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads, language="ko"):
     """
     Mix Mode: We provide the numeric data (calculated by our Algo).
     Gemini generates the comment based on these numbers.
@@ -37,10 +37,16 @@ def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads):
     if not os.environ.get("GEMINI_API_KEY"):
          return fallback_response(user_heads, model_heads, "[Mix 모드 (Mock)] API 키가 없어서 흉내만 냅니다.")
 
+    lang_instruction = "Korean"
+    if language == "vi":
+        lang_instruction = "Vietnamese (Tiếng Việt)"
+    elif language == "en":
+        lang_instruction = "English"
+
     prompt = f"""
     [Persona]
     You are a brutally honest but trendy K-Fashion Stylist (like a 'Fact Bomber').
-    Your audience is Koreans in their 20s-40s who care about fashion metrics.
+    Your audience is trendy people who care about fashion metrics.
     
     [Task]
     Compare the User's stats vs Model's stats and deliver a "Fact Bomb" critique.
@@ -50,10 +56,9 @@ def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads):
     - Model Heads: {model_heads:.1f} (Ideal)
     
     [Rules]
-    1. Language: Korean (Trendy, Sarcastic, "Z" generation style).
+    1. Language: {lang_instruction}. Trendy, Sarcastic style.
     2. Length: MAX 2-3 short sentences. Extremely concise.
-    3. Vocabulary: Use stylistic terms (e.g., '비율 깡패', '핏이 생명', '기장감', '현실 자각 타임').
-    4. Tone: If user is good, praise highly ("비율 미쳤네?"). If bad, roast gently but realistically ("...옷이 문제가 아니었네요").
+    3. Tone: If user is good, praise highly. If bad, roast gently but realistically.
     
     OUTPUT ONLY THE TEXT. NO PREAMBLE.
     """
@@ -127,7 +132,7 @@ def generate_gemini_image(prompt, reference_images=None):
         return None, f"Gemini Error: {cleaned_err}"
 
 
-def analyze_full_ai_mode(user_img_bytes, model_img_bytes):
+def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
     """
     Full AI Mode: Vision Analysis (Gemini) + Image Generation (Gemini 3 Pro).
     Now passes reference images directly to the generation model.
@@ -145,20 +150,26 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes):
         
         model = get_gemini_model("gemini-2.0-flash")
         
+        lang_target = "Korean"
+        if language == "vi": lang_target = "Vietnamese"
+        elif language == "en": lang_target = "English"
+
         # Update prompt to be compatible with Image-to-Image logic
         analysis_prompt = [
             "Role: Professional Fashion Director.",
             "Task: Deep-Fake Simulation Planning.",
             "STEP 1: Analyze Image 1 (User) for Body Ratios & Background.",
             "STEP 2: Analyze Image 2 (Model) for Clothing Details.",
-            "STEP 3: Compare & Critique (Text) - Korean.",
+            "STEP 3: Compare & Critique (Text).",
+            f"   - Language: {lang_target}",
+            "   - Tone: Sarcastic but useful fashion advice.",
             "STEP 4: Create a prompt for Gemini 3 Pro Image generation.",
             "- The prompt should instruct the model to generate a person resembling Image 1 wearing the clothes from Image 2.",
             "- Mention 'photorealistic, 8k, high quality'.",
             "- Keep the background from Image 1.",
             "Return JSON: {",
             "  'user_heads': number, 'model_heads': number,",
-            "  'comment': string (Savage Korean Critique),",
+            f"  'comment': string (Savage {lang_target} Critique),",
             "  'gen_prompt': string (English Prompt)"
             "}",
             img_user, img_model
