@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 import '../index.css'
 
 function HomePage() {
@@ -18,7 +19,7 @@ function HomePage() {
     const userFileInputRef = useRef(null)
     const modelFileInputRef = useRef(null)
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    // Health Check Logic
 
     // Health Check Logic
     const checkServerStatus = async (isManual = false) => {
@@ -130,15 +131,26 @@ function HomePage() {
     }
 
     // Helper Component for Result Card
+    // Helper Function for Downloading Image
+    const handleDownload = (base64Image, fileName) => {
+        const link = document.createElement('a');
+        link.href = `data:image/jpeg;base64,${base64Image}`;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Helper Component for Result Card
     const ResultCard = ({ title, data }) => {
         if (!data) return null;
 
         return (
-            <div className="card" style={{ flex: '1 1 300px', minWidth: '300px', maxWidth: '450px', border: '1px solid #475569', background: 'rgba(30, 41, 59, 0.5)' }}>
+            <div className="card" style={{ maxWidth: '800px' }}>
                 <h3 style={{ color: '#94a3b8' }}>{title}</h3>
-                <div className="preview-area" style={{ cursor: 'default', background: !data.image ? '#0f172a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="preview-area" style={{ height: 'auto', minHeight: '300px', cursor: 'default', background: !data.image ? '#0f172a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {data.image ? (
-                        <img src={`data:image/jpeg;base64,${data.image}`} alt={title} />
+                        <img src={`data:image/jpeg;base64,${data.image}`} alt={title} style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain' }} />
                     ) : (
                         <div style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
                             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🍌🚫</span>
@@ -148,12 +160,23 @@ function HomePage() {
                     )}
                 </div>
 
+                {data.image && (
+                    <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
+                        <button
+                            className="secondary-btn"
+                            onClick={() => handleDownload(data.image, 'factbomb_fit_check.jpg')}
+                        >
+                            📥 Download Result
+                        </button>
+                    </div>
+                )}
+
                 <div style={{ marginTop: '1rem', padding: '1rem', background: '#1e293b', borderRadius: '0.5rem' }}>
                     <h4 style={{ color: '#cbd5e1', margin: '0 0 0.5rem 0' }}>FactBomb 💣</h4>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-line' }}>{data.analysis.fact_bomb}</p>
 
                     <hr style={{ borderColor: '#334155', margin: '1rem 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#e2e8f0', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <span>🧍 You: <strong>{data.analysis.user_heads} 등신</strong></span>
                         <span>✨ Model: <strong>{data.analysis.model_heads} 등신</strong></span>
                     </div>
@@ -163,22 +186,29 @@ function HomePage() {
     }
 
     return (
-        <div className="container">
-            <h1>FactBomb Fitting Room</h1>
-            <p className="tagline">Shockingly Realistic. Brutally Honest.</p>
+        <main className="container">
+            <header style={{ marginBottom: '2rem' }}>
+                <h1>FactBomb Fitting Room</h1>
+                <p className="tagline">Shockingly Realistic. Brutally Honest.</p>
+            </header>
 
             {/* Server Status Banner */}
-            <div style={{
+            <div role="status" aria-live="polite" style={{
                 margin: '0 auto 2rem auto',
                 padding: '0.75rem',
                 borderRadius: '8px',
+                width: '100%',
                 maxWidth: '600px',
                 textAlign: 'center',
-                backgroundColor: serverStatus === 'online' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                border: `1px solid ${serverStatus === 'online' ? '#059669' : '#b91c1c'}`,
-                color: serverStatus === 'online' ? '#34d399' : '#fca5a5'
+                backgroundColor: serverStatus === 'online' ? 'rgba(16, 185, 129, 0.2)' :
+                    serverStatus === 'checking' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                border: `1px solid ${serverStatus === 'online' ? '#059669' :
+                    serverStatus === 'checking' ? '#3b82f6' : '#b91c1c'}`,
+                color: serverStatus === 'online' ? '#34d399' :
+                    serverStatus === 'checking' ? '#60a5fa' : '#fca5a5',
+                boxSizing: 'border-box'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <span>
                         {serverStatus === 'checking' && '🔄 Checking Server...'}
                         {serverStatus === 'online' && '✅ System Operational. Service Available.'}
@@ -187,6 +217,7 @@ function HomePage() {
                     {serverStatus !== 'online' && (
                         <button
                             onClick={() => checkServerStatus(true)}
+                            aria-label="Refresh connection"
                             style={{
                                 padding: '4px 8px',
                                 fontSize: '0.8rem',
@@ -213,7 +244,7 @@ function HomePage() {
                 )}
             </div>
 
-            <div className="upload-section">
+            <section className="upload-section">
                 {/* User Photo Card */}
                 <div className="card">
                     <h3>1. Your Real Body</h3>
@@ -223,13 +254,14 @@ function HomePage() {
                             ref={userFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'user')}
                             accept="image/*"
+                            aria-label="Upload your full body photo"
                         />
                         {userImage ? (
                             <img src={userImage.url} alt="User" />
                         ) : (
                             <div className="preview-placeholder">
-                                <span>📸</span>
-                                <span>Click to Upload</span>
+                                <span aria-hidden="true">📸</span>
+                                <span style={{ textAlign: 'center' }}>Click to Upload<br />(Full Body)</span>
                             </div>
                         )}
                     </div>
@@ -245,22 +277,23 @@ function HomePage() {
                             ref={modelFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'model')}
                             accept="image/*"
+                            aria-label="Upload model photo"
                         />
                         {modelImage ? (
                             <img src={modelImage.url} alt="Model" />
                         ) : (
                             <div className="preview-placeholder">
-                                <span>👕</span>
-                                <span>Click to Upload</span>
+                                <span aria-hidden="true">👕</span>
+                                <span style={{ textAlign: 'center' }}>Click to Upload<br />(Model Look)</span>
                             </div>
                         )}
                     </div>
                     <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Shopping mall model shot</p>
                 </div>
-            </div>
+            </section>
 
-            <div style={{ margin: '2rem 0' }}>
-                {error && <div style={{ color: '#f43f5e', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
+            <section style={{ margin: '2rem 0', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                {error && <div role="alert" style={{ color: '#f43f5e', marginBottom: '1rem', fontWeight: 'bold', width: '100%', textAlign: 'center' }}>{error}</div>}
 
                 <button
                     className="action-btn"
@@ -270,14 +303,14 @@ function HomePage() {
                 >
                     {loading ? 'Crunching...' : 'Reality Check! 💥'}
                 </button>
-            </div>
+            </section>
 
             {/* RESULT SECTION */}
             {baselineData && (
-                <div className="result-section" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+                <section className="result-section">
                     <h2 style={{ marginBottom: '2rem' }}>Analysis Result</h2>
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center', width: '100%' }}>
                         <ResultCard
                             title="📊 Result"
                             data={baselineData}
@@ -286,32 +319,32 @@ function HomePage() {
 
                     <div style={{ marginTop: '3rem' }}>
                         <button
+                            className="secondary-btn"
                             onClick={() => setShowDebug(!showDebug)}
-                            style={{ background: 'transparent', border: '1px solid #64748b', color: '#94a3b8', cursor: 'pointer', padding: '0.5rem 1rem', borderRadius: '4px' }}
                         >
                             {showDebug ? 'Hide Details' : 'Show Analysis Details 🕵️'}
                         </button>
                     </div>
 
                     {showDebug && (
-                        <div className="debug-section" style={{ marginTop: '2rem', padding: '1rem', background: '#0f172a', borderRadius: '1rem', border: '1px solid #334155' }}>
+                        <div className="debug-section" style={{ marginTop: '2rem', padding: '1rem', background: '#0f172a', borderRadius: '1rem', border: '1px solid #334155', width: '100%', maxWidth: '800px', boxSizing: 'border-box' }}>
                             <h3 style={{ marginBottom: '1rem' }}>Detailed Metrics 📐</h3>
 
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                                <div>
+                                <div style={{ maxWidth: '100%' }}>
                                     <h5 style={{ color: '#cbd5e1' }}>User Skeleton</h5>
-                                    <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                    <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} alt="User detailed skeleton analysis" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155', objectFit: 'contain' }} />
                                 </div>
-                                <div>
+                                <div style={{ maxWidth: '100%' }}>
                                     <h5 style={{ color: '#cbd5e1' }}>Model Skeleton</h5>
-                                    <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                    <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} alt="Model detailed skeleton analysis" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155', objectFit: 'contain' }} />
                                 </div>
                             </div>
                         </div>
                     )}
-                </div>
+                </section>
             )}
-        </div>
+        </main>
     )
 }
 
