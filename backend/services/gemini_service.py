@@ -74,8 +74,8 @@ from google import genai as new_genai
 
 def generate_gemini_image(prompt, reference_images=None):
     """
-    Generates an image using Gemini 3 Pro Image Preview (or 2.5 Flash Image).
-    Can accept reference images (PIL Images) for better context.
+    Generates an image using Gemini (Nano Banana / gemini-2.5-flash-image).
+    Supports reference images.
     """
     if not os.environ.get("GEMINI_API_KEY"):
          return None, "Missing GEMINI_API_KEY in .env"
@@ -84,46 +84,49 @@ def generate_gemini_image(prompt, reference_images=None):
         # Initialize the new client
         client = new_genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
         
-        print(f"[Gemini] Generating... Prompt: {prompt[:50]}...")
+        print(f"[Gemini] Generating (Nano Banana)... Prompt: {prompt[:50]}...")
         
         # Prepare contents
         contents = [prompt]
         if reference_images:
-            print(f"[Gemini] Including {len(reference_images)} reference images.")
-            contents.extend(reference_images)
+             # Check if reference images are valid PIL images or supported types
+             # The new SDK handles PIL Images directly in the list
+             print(f"[Gemini] Including {len(reference_images)} reference images.")
+             contents.extend(reference_images)
 
-        # Use gemini-2.0-flash-exp for image generation (likely better quota/availability)
-        model_name = "gemini-2.0-flash-exp"
+        # Use gemini-2.5-flash-image (Nano Banana) as per documentation
+        model_name = "gemini-2.5-flash-image"
 
         response = None
         max_retries = 3
         for attempt in range(max_retries):
             try:
+                # Note: valid response_modalities for this model might be implicitly TEXT/IMAGE
+                # The docs don't strictly require config for basic usage, but we can add it to be safe if needed.
+                # For now, following the simple doc example.
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=contents,
-                    config=new_genai.types.GenerateContentConfig(
-                        response_modalities=["IMAGE"], # Ensure we get an image
-                    )
+                    contents=contents
                 )
                 break
             except Exception as e:
                 # Basic check for 429 or Resource Exhausted
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                     if attempt < max_retries - 1:
-                        wait_time = (2 ** attempt) * 10  # 10s, 20s...
+                        wait_time = (2 ** attempt) * 10 
                         print(f"[Gemini] Rate limit hit. Retrying in {wait_time}s...")
                         time.sleep(wait_time)
                         continue
                 raise e
         
         # Extract image from response parts
-        for part in response.parts:
-            if part.inline_data:
-                image_bytes = part.inline_data.data
-                print(f"[Gemini] Image generated successfully. Size: {len(image_bytes)} bytes")
-                return base64.b64encode(image_bytes).decode("utf-8"), None
-                
+        if response.parts:
+            for part in response.parts:
+                if part.inline_data:
+                    image_bytes = part.inline_data.data
+                    print(f"[Gemini] Image generated successfully. Size: {len(image_bytes)} bytes")
+                    return base64.b64encode(image_bytes).decode("utf-8"), None
+        
         return None, "No image found in Gemini response."
 
     except Exception as e:
@@ -134,8 +137,7 @@ def generate_gemini_image(prompt, reference_images=None):
 
 def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
     """
-    Full AI Mode: Vision Analysis (Gemini) + Image Generation (Gemini 3 Pro).
-    Now passes reference images directly to the generation model.
+    Full AI Mode: Vision Analysis (Gemini) + Image Generation (Imagen 3).
     """
     if not os.environ.get("GEMINI_API_KEY"): 
          return {
@@ -144,11 +146,13 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
          }
 
     try:
-        # 1. Vision Analysis (Gemini 2.5) to understand Scene + Create Gen Prompt
+        # 1. Vision Analysis (Gemini 2.0 Flash) to understand Scene + Create Gen Prompt
         img_user = PIL.Image.open(io.BytesIO(user_img_bytes))
         img_model = PIL.Image.open(io.BytesIO(model_img_bytes))
         
-        model = get_gemini_model("gemini-2.0-flash")
+        model = get_gemini_model("gemini-2.0-flash-exp") # Explicitly use Flash Exp or Pro
+        if not model:
+             model = get_gemini_model("gemini-1.5-flash") # Fallback
         
         lang_target = "Korean"
         if language == "vi": lang_target = "Vietnamese"
@@ -163,10 +167,11 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
             "STEP 3: Compare & Critique (Text).",
             f"   - Language: {lang_target}",
             "   - Tone: Sarcastic but useful fashion advice.",
-            "STEP 4: Create a prompt for Gemini 3 Pro Image generation.",
-            "- The prompt should instruct the model to generate a person resembling Image 1 wearing the clothes from Image 2.",
+            "STEP 4: Create a highly detailed text prompt for Imagen 3 Image generation.",
+            "- The prompt should describe a photorealistic image of a person who looks like the user in Image 1, wearing the EXACT clothes from Image 2.",
+            "- Describe the User's physical features (gender, hair, pose, body type) and the Model's clothing (color, type, texture) in detail.",
             "- Mention 'photorealistic, 8k, high quality'.",
-            "- Keep the background from Image 1.",
+            "- Keep the background description from Image 1.",
             "Return JSON: {",
             "  'user_heads': number, 'model_heads': number,",
             f"  'comment': string (Savage {lang_target} Critique),",
@@ -191,18 +196,14 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
         else:
             data = {"comment": text, "gen_prompt": "A stylish person"}
             
-        # 2. Image Generation (Gemini 3 Pro with Reference Images)
+        # 2. Image Generation (Imagen 3)
         gen_prompt = data.get("gen_prompt", "Fashion model wearing stylish clothes")
         
-        # Make the prompt explicit about the images provided
-        full_gen_prompt = (
-            f"{gen_prompt}. "
-            "Use the first image as the reference for the person and background. "
-            "Use the second image as the reference for the clothing. "
-            "Generate a realistic image."
-        )
+        # Refine prompt for Imagen (Text Only)
+        # We rely on Gemini's detailed description in 'gen_prompt'.
+        full_gen_prompt = f"{gen_prompt}, photorealistic, 8k, high quality"
 
-        generated_b64, error_msg = generate_gemini_image(full_gen_prompt, reference_images=[img_user, img_model])
+        generated_b64, error_msg = generate_gemini_image(full_gen_prompt, reference_images=None)
 
         
         final_comment = data.get("comment", "Analysis complete.")
