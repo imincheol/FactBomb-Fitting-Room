@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import '../index.css'
 
 function HomePage() {
@@ -10,8 +10,70 @@ function HomePage() {
     const [baselineData, setBaselineData] = useState(null)
     const [showDebug, setShowDebug] = useState(false)
 
+    // Server Health Check State
+    const [serverStatus, setServerStatus] = useState('checking') // 'checking', 'online', 'offline'
+    const [retryCount, setRetryCount] = useState(0)
+    const [lastChecked, setLastChecked] = useState(null)
+
     const userFileInputRef = useRef(null)
     const modelFileInputRef = useRef(null)
+
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+    // Health Check Logic
+    const checkServerStatus = async (isManual = false) => {
+        if (!isManual && serverStatus === 'offline' && retryCount >= 10) {
+            return; // Stop retrying after 10 failed attempts
+        }
+
+        if (isManual) {
+            setRetryCount(0); // Reset retry count on manual check
+            setServerStatus('checking');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/health`)
+            if (response.ok) {
+                setServerStatus('online')
+                setRetryCount(0)
+                setLastChecked(new Date())
+            } else {
+                throw new Error('Server not ready')
+            }
+        } catch (err) {
+            console.error("Server Check Failed:", err)
+            setServerStatus('offline')
+            if (!isManual) {
+                setRetryCount(prev => prev + 1)
+            }
+        }
+    }
+
+    // Initial Check & Interval
+    useEffect(() => {
+        // Run initial check
+        checkServerStatus()
+
+        // Setup interval based on status
+        let intervalId;
+
+        if (serverStatus === 'online') {
+            // If online, check every 5 minutes
+            intervalId = setInterval(() => {
+                checkServerStatus()
+            }, 5 * 60 * 1000)
+        } else if (serverStatus === 'offline' && retryCount < 10) {
+            // If offline and still trying, check every 1 minute
+            intervalId = setInterval(() => {
+                checkServerStatus()
+            }, 60 * 1000)
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId)
+        }
+    }, [serverStatus, retryCount])
+
 
     const handleImageUpload = (e, type) => {
         const file = e.target.files[0]
@@ -34,6 +96,11 @@ function HomePage() {
             return
         }
 
+        if (serverStatus !== 'online') {
+            setError("Server is currently offline. Please wait or refresh.")
+            return
+        }
+
         setLoading(true)
         setError(null)
         setBaselineData(null)
@@ -44,7 +111,6 @@ function HomePage() {
             formData.append('user_image', userImage.file)
             formData.append('model_image', modelImage.file)
 
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE_URL}/process-baseline`, {
                 method: 'POST',
                 body: formData,
@@ -101,6 +167,52 @@ function HomePage() {
             <h1>FactBomb Fitting Room</h1>
             <p className="tagline">Shockingly Realistic. Brutally Honest.</p>
 
+            {/* Server Status Banner */}
+            <div style={{
+                margin: '0 auto 2rem auto',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                maxWidth: '600px',
+                textAlign: 'center',
+                backgroundColor: serverStatus === 'online' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                border: `1px solid ${serverStatus === 'online' ? '#059669' : '#b91c1c'}`,
+                color: serverStatus === 'online' ? '#34d399' : '#fca5a5'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <span>
+                        {serverStatus === 'checking' && '🔄 Checking Server...'}
+                        {serverStatus === 'online' && '✅ System Operational. Service Available.'}
+                        {serverStatus === 'offline' && '⚠️ System Offline. Connection unstable.'}
+                    </span>
+                    {serverStatus !== 'online' && (
+                        <button
+                            onClick={() => checkServerStatus(true)}
+                            style={{
+                                padding: '4px 8px',
+                                fontSize: '0.8rem',
+                                background: '#334155',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            🔄 Refresh
+                        </button>
+                    )}
+                </div>
+                {serverStatus === 'offline' && retryCount > 0 && retryCount < 10 && (
+                    <div style={{ fontSize: '0.8rem', marginTop: '4px', opacity: 0.8 }}>
+                        Auto-retrying... ({retryCount}/10)
+                    </div>
+                )}
+                {serverStatus === 'online' && lastChecked && (
+                    <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.7 }}>
+                        Last checked: {lastChecked.toLocaleTimeString()} (Next check in 5m)
+                    </div>
+                )}
+            </div>
+
             <div className="upload-section">
                 {/* User Photo Card */}
                 <div className="card">
@@ -153,7 +265,8 @@ function HomePage() {
                 <button
                     className="action-btn"
                     onClick={handleProcess}
-                    disabled={loading || !userImage || !modelImage}
+                    disabled={loading || !userImage || !modelImage || serverStatus !== 'online'}
+                    style={{ opacity: (serverStatus !== 'online') ? 0.5 : 1, cursor: (serverStatus !== 'online') ? 'not-allowed' : 'pointer' }}
                 >
                     {loading ? 'Crunching...' : 'Reality Check! 💥'}
                 </button>
