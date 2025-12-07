@@ -3,4 +3,4 @@ Allow: /
 Disallow: /private/
 Disallow: /admin/
 
-Sitemap: https://smh-fassion.vercel.app/sitemap.xml
+Sitemap: https://chakshot.com/sitemap.xml

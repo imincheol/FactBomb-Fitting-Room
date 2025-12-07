@@ -1,5 +1,5 @@
 export default {
-    "title": "Phòng Thử Đồ Sự Thật Mất Lòng",
+    "title": "Chakshot (Phòng Thử Đồ)",
     "tagline": "Cực kỳ Chân thực. Thẳng thắn đến Tàn nhẫn.",
     "server": {
         "checking": "🔄 Đang kiểm tra máy chủ...",
@@ -29,7 +29,7 @@ export default {
         "visual_check_failed": "Kiểm tra Hình ảnh Thất bại",
         "nano_banana": "Nano Banana chỉ cung cấp phân tích văn bản.",
         "download": "📥 Tải xuống Kết quả",
-        "fact_bomb_title": "Sự Thật Mất Lòng 💣",
+        "fact_bomb_title": "Báo Cáo Chakshot 💣",
         "you": "🧍 Bạn:",
         "model": "✨ Mẫu:",
         "ratio_unit": "đầu thân",

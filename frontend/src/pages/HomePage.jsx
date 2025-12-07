@@ -217,19 +217,7 @@ function HomePage() {
                     </div>
                 </div>
                 <h1>{t('title')}</h1>
-                {i18n.language !== 'en' && (
-                    <h2 style={{
-                        fontSize: '1rem',
-                        color: 'var(--text-secondary)',
-                        marginTop: '-0.5rem',
-                        marginBottom: '0.5rem',
-                        fontWeight: 'normal',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                    }}>
-                        (FactBomb Fitting Room)
-                    </h2>
-                )}
+
                 <p className="tagline">{t('tagline')}</p>
             </header>
 

@@ -1,5 +1,5 @@
 export default {
-    "title": "팩트폭격 피팅룸",
+    "title": "착샷 (Chakshot)",
     "tagline": "충격적인 현실감. 잔인할 만큼 솔직함.",
     "server": {
         "checking": "🔄 서버 확인 중...",
@@ -29,7 +29,7 @@ export default {
         "visual_check_failed": "비주얼 확인 실패",
         "nano_banana": "Nano Banana 텍스트 분석 결과만 제공됩니다.",
         "download": "📥 결과 다운로드",
-        "fact_bomb_title": "팩트 폭격 💣",
+        "fact_bomb_title": "착샷 리포트 💣",
         "you": "🧍 나:",
         "model": "✨ 모델:",
         "ratio_unit": "등신",
