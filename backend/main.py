@@ -17,10 +17,22 @@ import io
 import traceback
 
 # Import Services
-from backend.services.image_processor import process_visuals_core, get_base64_results
-from backend.services.legacy_analysis import analyze_body_proportions
-from backend.services.gemini_service import analyze_mix_mode, analyze_full_ai_mode
-from backend.services.lab_service import run_experiment_flow_a, run_experiment_flow_b
+# Import Services
+try:
+    from backend.services.image_processor import process_visuals_core, get_base64_results
+    from backend.services.legacy_analysis import analyze_body_proportions
+    from backend.services.gemini_service import analyze_mix_mode, analyze_full_ai_mode
+    from backend.services.lab_service import run_experiment_flow_a, run_experiment_flow_b
+except ImportError:
+    import sys
+    import os
+    # Add the current directory to sys.path to ensure 'services' can be resolved
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    
+    from services.image_processor import process_visuals_core, get_base64_results
+    from services.legacy_analysis import analyze_body_proportions
+    from services.gemini_service import analyze_mix_mode, analyze_full_ai_mode
+    from services.lab_service import run_experiment_flow_a, run_experiment_flow_b
 
 app = FastAPI()
 
