@@ -135,9 +135,9 @@ function HomePage() {
         if (!data) return null;
 
         return (
-            <div className="card" style={{ flex: '1 1 300px', minWidth: '300px', maxWidth: '450px', border: '1px solid #475569', background: 'rgba(30, 41, 59, 0.5)' }}>
+            <div className="card" style={{ width: '100%', flex: '1 1 300px', minWidth: '300px', maxWidth: '800px', border: '1px solid #475569', background: 'rgba(30, 41, 59, 0.5)' }}>
                 <h3 style={{ color: '#94a3b8' }}>{title}</h3>
-                <div className="preview-area" style={{ cursor: 'default', background: !data.image ? '#0f172a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="preview-area" style={{ height: '700px', cursor: 'default', background: !data.image ? '#0f172a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {data.image ? (
                         <img src={`data:image/jpeg;base64,${data.image}`} alt={title} />
                     ) : (
@@ -164,20 +164,25 @@ function HomePage() {
     }
 
     return (
-        <div className="container">
-            <h1>FactBomb Fitting Room</h1>
-            <p className="tagline">Shockingly Realistic. Brutally Honest.</p>
+        <main className="container">
+            <header style={{ marginBottom: '2rem' }}>
+                <h1>FactBomb Fitting Room</h1>
+                <p className="tagline">Shockingly Realistic. Brutally Honest.</p>
+            </header>
 
             {/* Server Status Banner */}
-            <div style={{
+            <div role="status" aria-live="polite" style={{
                 margin: '0 auto 2rem auto',
                 padding: '0.75rem',
                 borderRadius: '8px',
                 maxWidth: '600px',
                 textAlign: 'center',
-                backgroundColor: serverStatus === 'online' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                border: `1px solid ${serverStatus === 'online' ? '#059669' : '#b91c1c'}`,
-                color: serverStatus === 'online' ? '#34d399' : '#fca5a5'
+                backgroundColor: serverStatus === 'online' ? 'rgba(16, 185, 129, 0.2)' :
+                    serverStatus === 'checking' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                border: `1px solid ${serverStatus === 'online' ? '#059669' :
+                    serverStatus === 'checking' ? '#3b82f6' : '#b91c1c'}`,
+                color: serverStatus === 'online' ? '#34d399' :
+                    serverStatus === 'checking' ? '#60a5fa' : '#fca5a5'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                     <span>
@@ -188,6 +193,7 @@ function HomePage() {
                     {serverStatus !== 'online' && (
                         <button
                             onClick={() => checkServerStatus(true)}
+                            aria-label="Refresh connection"
                             style={{
                                 padding: '4px 8px',
                                 fontSize: '0.8rem',
@@ -214,7 +220,7 @@ function HomePage() {
                 )}
             </div>
 
-            <div className="upload-section">
+            <section className="upload-section">
                 {/* User Photo Card */}
                 <div className="card">
                     <h3>1. Your Real Body</h3>
@@ -224,12 +230,13 @@ function HomePage() {
                             ref={userFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'user')}
                             accept="image/*"
+                            aria-label="Upload your full body photo"
                         />
                         {userImage ? (
                             <img src={userImage.url} alt="User" />
                         ) : (
                             <div className="preview-placeholder">
-                                <span>📸</span>
+                                <span aria-hidden="true">📸</span>
                                 <span>Click to Upload</span>
                             </div>
                         )}
@@ -246,22 +253,23 @@ function HomePage() {
                             ref={modelFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'model')}
                             accept="image/*"
+                            aria-label="Upload model photo"
                         />
                         {modelImage ? (
                             <img src={modelImage.url} alt="Model" />
                         ) : (
                             <div className="preview-placeholder">
-                                <span>👕</span>
+                                <span aria-hidden="true">👕</span>
                                 <span>Click to Upload</span>
                             </div>
                         )}
                     </div>
                     <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Shopping mall model shot</p>
                 </div>
-            </div>
+            </section>
 
-            <div style={{ margin: '2rem 0' }}>
-                {error && <div style={{ color: '#f43f5e', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
+            <section style={{ margin: '2rem 0' }}>
+                {error && <div role="alert" style={{ color: '#f43f5e', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
 
                 <button
                     className="action-btn"
@@ -271,11 +279,11 @@ function HomePage() {
                 >
                     {loading ? 'Crunching...' : 'Reality Check! 💥'}
                 </button>
-            </div>
+            </section>
 
             {/* RESULT SECTION */}
             {baselineData && (
-                <div className="result-section" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+                <section className="result-section" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
                     <h2 style={{ marginBottom: '2rem' }}>Analysis Result</h2>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center' }}>
@@ -301,18 +309,18 @@ function HomePage() {
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                 <div>
                                     <h5 style={{ color: '#cbd5e1' }}>User Skeleton</h5>
-                                    <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                    <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} alt="User detailed skeleton analysis" style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
                                 </div>
                                 <div>
                                     <h5 style={{ color: '#cbd5e1' }}>Model Skeleton</h5>
-                                    <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                    <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} alt="Model detailed skeleton analysis" style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
                                 </div>
                             </div>
                         </div>
                     )}
-                </div>
+                </section>
             )}
-        </div>
+        </main>
     )
 }
 

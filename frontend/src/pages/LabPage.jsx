@@ -156,14 +156,16 @@ function LabPage() {
     }
 
     return (
-        <div className="container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h1>FactBomb Fitting Room <span style={{ fontSize: '0.5em', color: '#f472b6', border: '1px solid #f472b6', padding: '2px 8px', borderRadius: '10px', verticalAlign: 'middle' }}>LAB</span></h1>
+        <main className="container">
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div>
+                    <h1>FactBomb Fitting Room <span style={{ fontSize: '0.5em', color: '#f472b6', border: '1px solid #f472b6', padding: '2px 8px', borderRadius: '10px', verticalAlign: 'middle' }}>LAB</span></h1>
+                    <p className="tagline" style={{ marginTop: '0.5rem' }}>Shockingly Realistic. Brutally Honest. (Experimental Build)</p>
+                </div>
                 <a href="/" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem' }}>Go to Basic &rarr;</a>
-            </div>
-            <p className="tagline">Shockingly Realistic. Brutally Honest. (Experimental Build)</p>
+            </header>
 
-            <div className="upload-section">
+            <section className="upload-section">
                 {/* User Photo Card */}
                 <div className="card">
                     <h3>1. Your Real Body</h3>
@@ -173,12 +175,13 @@ function LabPage() {
                             ref={userFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'user')}
                             accept="image/*"
+                            aria-label="Upload your full body photo"
                         />
                         {userImage ? (
                             <img src={userImage.url} alt="User" />
                         ) : (
                             <div className="preview-placeholder">
-                                <span>📸</span>
+                                <span aria-hidden="true">📸</span>
                                 <span>Click to Upload</span>
                             </div>
                         )}
@@ -195,25 +198,26 @@ function LabPage() {
                             ref={modelFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'model')}
                             accept="image/*"
+                            aria-label="Upload model photo"
                         />
                         {modelImage ? (
                             <img src={modelImage.url} alt="Model" />
                         ) : (
                             <div className="preview-placeholder">
-                                <span>👕</span>
+                                <span aria-hidden="true">👕</span>
                                 <span>Click to Upload</span>
                             </div>
                         )}
                     </div>
                     <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Shopping mall model shot</p>
                 </div>
-            </div>
+            </section>
 
-            <div style={{ margin: '2rem 0' }}>
-                {error && <div style={{ color: '#f43f5e', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
+            <section style={{ margin: '2rem 0' }}>
+                {error && <div role="alert" style={{ color: '#f43f5e', marginBottom: '1rem', fontWeight: 'bold' }}>{error}</div>}
 
                 {/* Mode Selector */}
-                <div className="mode-selector" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div className="mode-selector" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }} role="radiogroup" aria-label="Analysis Mode Selection">
 
                     {/* 1. Legacy */}
                     <label style={{
@@ -283,7 +287,7 @@ function LabPage() {
                 {mode === 'lab' && (
                     <div className="lab-options" style={{ marginBottom: '2rem', background: '#1e293b', padding: '1rem', borderRadius: '0.5rem', border: '1px dashed #818cf8' }}>
                         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>🔬 Select Experiment Flow:</p>
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }} role="radiogroup" aria-label="Lab Experiment Flow">
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#cbd5e1' }}>
                                 <input
                                     type="radio"
@@ -315,11 +319,11 @@ function LabPage() {
                 >
                     {loading ? 'Crunching Baseline...' : (isAiLoading ? 'Analyzing AI...' : 'Reality Check! 💥')}
                 </button>
-            </div>
+            </section>
 
             {/* RESULT SECTION (Comparison View) */}
             {(baselineData || isAiLoading) && (
-                <div className="result-section" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+                <section className="result-section" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
                     <h2 style={{ marginBottom: '2rem' }}>Comparison Result 🆚</h2>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center' }}>
@@ -369,20 +373,20 @@ function LabPage() {
                                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                         <div>
                                             <h5 style={{ color: '#cbd5e1' }}>User Skeleton</h5>
-                                            <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                            <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} alt="User Skeleton Debug View" style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
                                         </div>
                                         <div>
                                             <h5 style={{ color: '#cbd5e1' }}>Model Skeleton</h5>
-                                            <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                            <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} alt="Model Skeleton Debug View" style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </>
                     )}
-                </div>
+                </section>
             )}
-        </div>
+        </main>
     )
 }
 
