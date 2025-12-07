@@ -1,32 +1,29 @@
 
 import os
 import io
-import google.generativeai as genai
 import PIL.Image
 from dotenv import load_dotenv
+from google import genai
+from .gemini_service import get_gemini_client, generate_gemini_image
 
 load_dotenv()
 
-# We will use the stable 2.5-flash model which has better quota limits than the experimental ones.
-# User refers to Gemini 2.5 Flash as "Nano Banana"
-IMAGE_GEN_MODEL_NAME = "gemini-2.5-flash" 
-
-def get_image_gen_model():
-    return genai.GenerativeModel(IMAGE_GEN_MODEL_NAME)
-
-from .gemini_service import generate_gemini_image
+# Using Gemini 3
+TEXT_MODEL_NAME = "gemini-3-pro-preview"
 import json
 import re
 
 def generate_lab_image(prompt, base_image_bytes=None):
     """
-    Nano Banana Lab Integration.
-    1. Vision Analysis (Gemini 2.5) -> JSON (Critique + Gen Prompt)
-    2. Image Generation (Gemini 2.5 Flash Image) -> Real Image
+    Gemini 3 Lab Integration.
+    1. Vision Analysis (Gemini 3 Pro) -> JSON (Critique + Gen Prompt)
+    2. Image Generation (Gemini 3 Pro Image) -> Real Image
     """
     try:
-        model = get_image_gen_model() # Gemini 2.5 Flash used for text/vision logic
-        
+        client = get_gemini_client()
+        if not client:
+             return {"comment": "API Key Missing", "image": None}
+
         # We append the JSON instruction generically to ensure format
         json_instruction = """
         IMPORTANT JSON OUTPUT FORMAT:
@@ -42,8 +39,11 @@ def generate_lab_image(prompt, base_image_bytes=None):
             img = PIL.Image.open(io.BytesIO(base_image_bytes))
             full_inputs.append(img)
             
-        # 1. Vision / Critique
-        response = model.generate_content(full_inputs)
+        # 1. Vision / Critique (Gemini 3)
+        response = client.models.generate_content(
+            model=TEXT_MODEL_NAME,
+            contents=full_inputs
+        )
         text = response.text.strip()
         
         # Parse JSON

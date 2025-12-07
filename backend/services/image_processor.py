@@ -100,7 +100,9 @@ def process_visuals_core(img_user, img_model):
         "user_ratios": user_ratios,
         "model_ratios": model_ratios,
         "result_ratios": res_ratios,
-        "result_heads": res_heads
+        "result_heads": res_heads,
+        "user_landmarks": user_landmarks,
+        "model_landmarks": model_landmarks
     }
 
 def get_base64_results(processed_data):

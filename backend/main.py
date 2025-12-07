@@ -159,14 +159,57 @@ async def process_ai(
             if u_h == 0: u_h = real_user_heads
             if m_h == 0: m_h = real_model_heads
             
-            generated_image = ai_vision_res.get('image') # Get real image from Nano Banana
+            generated_image = ai_vision_res.get('image') 
 
             active_analysis = {
                 "fact_bomb": ai_vision_res.get('comment', 'AI Vision Failed'),
                 "user_heads": u_h,
                 "model_heads": m_h,
                 "result_heads": 0, 
-                "result_ratios": {}
+                "result_ratios": {},
+                "debug_user_info": ai_vision_res.get('debug_user_info', ""),
+                "debug_model_info": ai_vision_res.get('debug_model_info', ""),
+                "gen_prompt": ai_vision_res.get('gen_prompt', "")
+            }
+
+        elif mode == 'mix':
+            print("Running Active Mode: Mix Mode")
+            # 1. Generate Base Assets on the fly (Base Mode)
+            # We need the "Standard" result and "Debug" images to feed into Mix Mode
+            nparr_user = np.frombuffer(user_bytes, np.uint8)
+            img_user_cv = cv2.imdecode(nparr_user, cv2.IMREAD_COLOR)
+            nparr_model = np.frombuffer(model_bytes, np.uint8)
+            img_model_cv = cv2.imdecode(nparr_model, cv2.IMREAD_COLOR)
+            
+            visual_data = process_visuals_core(img_user_cv, img_model_cv)
+            
+            # Convert OpenCV images to Bytes for Gemini
+            def cv_to_bytes(cv_img):
+                _, buf = cv2.imencode('.jpg', cv_img)
+                return buf.tobytes()
+
+            base_result_bytes = cv_to_bytes(visual_data['final_result'])
+            user_debug_bytes = cv_to_bytes(visual_data['user_debug'])
+            model_debug_bytes = cv_to_bytes(visual_data['model_debug'])
+            
+            # 2. Call Mix Mode Analysis
+            mix_res = analyze_mix_mode(
+                user_bytes, model_bytes, 
+                visual_data['user_ratios'], visual_data['model_ratios'],
+                visual_data['user_landmarks'], visual_data['model_landmarks'],
+                base_result_bytes, user_debug_bytes, model_debug_bytes,
+                language=language
+            )
+            
+            generated_image = mix_res.get('image')
+            
+            active_analysis = {
+                "fact_bomb": mix_res.get('comment', 'Mix Mode Failed'),
+                "user_heads": real_user_heads,
+                "model_heads": real_model_heads,
+                "result_heads": visual_data['result_heads'], 
+                "result_ratios": visual_data['result_ratios'],
+                "gen_prompt": mix_res.get('gen_prompt', "")
             }
 
         elif mode == 'lab':
