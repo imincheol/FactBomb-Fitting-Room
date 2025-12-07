@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { API_BASE_URL } from '../config'
 import '../index.css'
 
 function HomePage() {
+    const { t, i18n } = useTranslation()
     const [userImage, setUserImage] = useState(null)
     const [modelImage, setModelImage] = useState(null)
     const [loading, setLoading] = useState(false)
@@ -18,8 +20,6 @@ function HomePage() {
 
     const userFileInputRef = useRef(null)
     const modelFileInputRef = useRef(null)
-
-    // Health Check Logic
 
     // Health Check Logic
     const checkServerStatus = async (isManual = false) => {
@@ -93,12 +93,12 @@ function HomePage() {
 
     const handleProcess = async () => {
         if (!userImage || !modelImage) {
-            setError("Please upload both photos!")
+            setError(t('upload.error_both_photos'))
             return
         }
 
         if (serverStatus !== 'online') {
-            setError("Server is currently offline. Please wait or refresh.")
+            setError(t('upload.error_server_offline'))
             return
         }
 
@@ -111,6 +111,7 @@ function HomePage() {
             const formData = new FormData()
             formData.append('user_image', userImage.file)
             formData.append('model_image', modelImage.file)
+            formData.append('language', i18n.language) // Send current language
 
             const response = await fetch(`${API_BASE_URL}/process-baseline`, {
                 method: 'POST',
@@ -130,7 +131,6 @@ function HomePage() {
         }
     }
 
-    // Helper Component for Result Card
     // Helper Function for Downloading Image
     const handleDownload = (base64Image, fileName) => {
         const link = document.createElement('a');
@@ -154,8 +154,8 @@ function HomePage() {
                     ) : (
                         <div style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
                             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🍌🚫</span>
-                            <p><strong>Visual Check Failed</strong></p>
-                            <p style={{ fontSize: '0.8rem' }}>Nano Banana provided text analysis only.</p>
+                            <p><strong>{t('result.visual_check_failed')}</strong></p>
+                            <p style={{ fontSize: '0.8rem' }}>{t('result.nano_banana')}</p>
                         </div>
                     )}
                 </div>
@@ -166,19 +166,19 @@ function HomePage() {
                             className="secondary-btn"
                             onClick={() => handleDownload(data.image, 'factbomb_fit_check.jpg')}
                         >
-                            📥 Download Result
+                            {t('result.download')}
                         </button>
                     </div>
                 )}
 
                 <div style={{ marginTop: '1rem', padding: '1rem', background: '#1e293b', borderRadius: '0.5rem' }}>
-                    <h4 style={{ color: '#cbd5e1', margin: '0 0 0.5rem 0' }}>FactBomb 💣</h4>
+                    <h4 style={{ color: '#cbd5e1', margin: '0 0 0.5rem 0' }}>{t('result.fact_bomb_title')}</h4>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-line' }}>{data.analysis.fact_bomb}</p>
 
                     <hr style={{ borderColor: '#334155', margin: '1rem 0' }} />
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#e2e8f0', flexWrap: 'wrap', gap: '0.5rem' }}>
-                        <span>🧍 You: <strong>{data.analysis.user_heads} 등신</strong></span>
-                        <span>✨ Model: <strong>{data.analysis.model_heads} 등신</strong></span>
+                        <span>{t('result.you')} <strong>{data.analysis.user_heads} {t('result.ratio_unit')}</strong></span>
+                        <span>{t('result.model')} <strong>{data.analysis.model_heads} {t('result.ratio_unit')}</strong></span>
                     </div>
                 </div>
             </div>
@@ -187,9 +187,14 @@ function HomePage() {
 
     return (
         <main className="container">
-            <header style={{ marginBottom: '2rem' }}>
-                <h1>FactBomb Fitting Room</h1>
-                <p className="tagline">Shockingly Realistic. Brutally Honest.</p>
+            <header style={{ marginBottom: '2rem', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '10px' }}>
+                    <button onClick={() => i18n.changeLanguage('ko')} style={{ opacity: i18n.language === 'ko' ? 1 : 0.5 }}>🇰🇷</button>
+                    <button onClick={() => i18n.changeLanguage('vi')} style={{ opacity: i18n.language === 'vi' ? 1 : 0.5 }}>🇻🇳</button>
+                    <button onClick={() => i18n.changeLanguage('en')} style={{ opacity: i18n.language === 'en' ? 1 : 0.5 }}>🇺🇸</button>
+                </div>
+                <h1>{t('title')}</h1>
+                <p className="tagline">{t('tagline')}</p>
             </header>
 
             {/* Server Status Banner */}
@@ -210,9 +215,9 @@ function HomePage() {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <span>
-                        {serverStatus === 'checking' && '🔄 Checking Server...'}
-                        {serverStatus === 'online' && '✅ System Operational. Service Available.'}
-                        {serverStatus === 'offline' && '⚠️ System Offline. Connection unstable.'}
+                        {serverStatus === 'checking' && t('server.checking')}
+                        {serverStatus === 'online' && t('server.online')}
+                        {serverStatus === 'offline' && t('server.offline')}
                     </span>
                     {serverStatus !== 'online' && (
                         <button
@@ -228,18 +233,18 @@ function HomePage() {
                                 cursor: 'pointer'
                             }}
                         >
-                            🔄 Refresh
+                            {t('server.refresh')}
                         </button>
                     )}
                 </div>
                 {serverStatus === 'offline' && retryCount > 0 && retryCount < 10 && (
                     <div style={{ fontSize: '0.8rem', marginTop: '4px', opacity: 0.8 }}>
-                        Auto-retrying... ({retryCount}/10)
+                        {t('server.retrying', { count: retryCount })}
                     </div>
                 )}
                 {serverStatus === 'online' && lastChecked && (
                     <div style={{ fontSize: '0.7rem', marginTop: '4px', opacity: 0.7 }}>
-                        Last checked: {lastChecked.toLocaleTimeString()} (Next check in 5m)
+                        {t('server.lastChecked', { time: lastChecked.toLocaleTimeString() })}
                     </div>
                 )}
             </div>
@@ -247,48 +252,48 @@ function HomePage() {
             <section className="upload-section">
                 {/* User Photo Card */}
                 <div className="card">
-                    <h3>1. Your Real Body</h3>
+                    <h3>{t('upload.user_title')}</h3>
                     <div className="preview-area" onClick={() => userFileInputRef.current.click()}>
                         <input
                             type="file"
                             ref={userFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'user')}
                             accept="image/*"
-                            aria-label="Upload your full body photo"
+                            aria-label={t('upload.user_title')}
                         />
                         {userImage ? (
                             <img src={userImage.url} alt="User" />
                         ) : (
                             <div className="preview-placeholder">
                                 <span aria-hidden="true">📸</span>
-                                <span style={{ textAlign: 'center' }}>Click to Upload<br />(Full Body)</span>
+                                <span style={{ textAlign: 'center', whiteSpace: 'pre-line' }}>{t('upload.user_placeholder')}</span>
                             </div>
                         )}
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Full body shot required</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('upload.user_helper')}</p>
                 </div>
 
                 {/* Model Photo Card */}
                 <div className="card">
-                    <h3>2. The Dream Fit</h3>
+                    <h3>{t('upload.model_title')}</h3>
                     <div className="preview-area" onClick={() => modelFileInputRef.current.click()}>
                         <input
                             type="file"
                             ref={modelFileInputRef}
                             onChange={(e) => handleImageUpload(e, 'model')}
                             accept="image/*"
-                            aria-label="Upload model photo"
+                            aria-label={t('upload.model_title')}
                         />
                         {modelImage ? (
                             <img src={modelImage.url} alt="Model" />
                         ) : (
                             <div className="preview-placeholder">
                                 <span aria-hidden="true">👕</span>
-                                <span style={{ textAlign: 'center' }}>Click to Upload<br />(Model Look)</span>
+                                <span style={{ textAlign: 'center', whiteSpace: 'pre-line' }}>{t('upload.model_placeholder')}</span>
                             </div>
                         )}
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Shopping mall model shot</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('upload.model_helper')}</p>
                 </div>
             </section>
 
@@ -301,7 +306,7 @@ function HomePage() {
                     disabled={loading || !userImage || !modelImage || serverStatus !== 'online'}
                     style={{ opacity: (serverStatus !== 'online') ? 0.5 : 1, cursor: (serverStatus !== 'online') ? 'not-allowed' : 'pointer' }}
                 >
-                    {loading ? 'Crunching...' : 'Reality Check! 💥'}
+                    {loading ? t('action.crunching') : t('action.button')}
                 </button>
             </section>
 
@@ -312,7 +317,7 @@ function HomePage() {
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center', width: '100%' }}>
                         <ResultCard
-                            title="📊 Result"
+                            title={t('result.card_title')}
                             data={baselineData}
                         />
                     </div>
@@ -322,21 +327,21 @@ function HomePage() {
                             className="secondary-btn"
                             onClick={() => setShowDebug(!showDebug)}
                         >
-                            {showDebug ? 'Hide Details' : 'Show Analysis Details 🕵️'}
+                            {showDebug ? t('result.hide_details') : t('result.show_details')}
                         </button>
                     </div>
 
                     {showDebug && (
                         <div className="debug-section" style={{ marginTop: '2rem', padding: '1rem', background: '#0f172a', borderRadius: '1rem', border: '1px solid #334155', width: '100%', maxWidth: '800px', boxSizing: 'border-box' }}>
-                            <h3 style={{ marginBottom: '1rem' }}>Detailed Metrics 📐</h3>
+                            <h3 style={{ marginBottom: '1rem' }}>{t('result.detailed_metrics')}</h3>
 
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                 <div style={{ maxWidth: '100%' }}>
-                                    <h5 style={{ color: '#cbd5e1' }}>User Skeleton</h5>
+                                    <h5 style={{ color: '#cbd5e1' }}>{t('result.user_skeleton')}</h5>
                                     <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} alt="User detailed skeleton analysis" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155', objectFit: 'contain' }} />
                                 </div>
                                 <div style={{ maxWidth: '100%' }}>
-                                    <h5 style={{ color: '#cbd5e1' }}>Model Skeleton</h5>
+                                    <h5 style={{ color: '#cbd5e1' }}>{t('result.model_skeleton')}</h5>
                                     <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} alt="Model detailed skeleton analysis" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155', objectFit: 'contain' }} />
                                 </div>
                             </div>
