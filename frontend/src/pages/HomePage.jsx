@@ -51,12 +51,13 @@ function HomePage() {
         }
     }
 
-    // Initial Check & Interval
+    // Initial Check
     useEffect(() => {
-        // Run initial check
         checkServerStatus()
+    }, [])
 
-        // Setup interval based on status
+    // Interval Logic
+    useEffect(() => {
         let intervalId;
 
         if (serverStatus === 'online') {
@@ -65,10 +66,10 @@ function HomePage() {
                 checkServerStatus()
             }, 5 * 60 * 1000)
         } else if (serverStatus === 'offline' && retryCount < 10) {
-            // If offline and still trying, check every 1 minute
+            // If offline, retry every 5 seconds
             intervalId = setInterval(() => {
                 checkServerStatus()
-            }, 60 * 1000)
+            }, 5000)
         }
 
         return () => {

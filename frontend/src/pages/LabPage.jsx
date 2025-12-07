@@ -59,15 +59,19 @@ function LabPage() {
         }
     }
 
-    // Initial Check & Interval
+    // Initial Check
     useEffect(() => {
         checkServerStatus()
+    }, [])
+
+    // Interval Logic
+    useEffect(() => {
         let intervalId;
 
         if (serverStatus === 'online') {
             intervalId = setInterval(() => checkServerStatus(), 5 * 60 * 1000)
         } else if (serverStatus === 'offline' && retryCount < 10) {
-            intervalId = setInterval(() => checkServerStatus(), 60 * 1000)
+            intervalId = setInterval(() => checkServerStatus(), 5000)
         }
 
         return () => {

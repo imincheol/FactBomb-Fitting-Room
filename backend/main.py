@@ -17,7 +17,7 @@ import io
 import traceback
 
 # Import Services
-# Import Services
+try:
     from backend.services.mode_vision import process_visuals_core, get_base64_results, analyze_body_proportions
     from backend.services.mode_ai import analyze_full_ai_mode
     from backend.services.mode_pro import run_pro_mode_analysis
@@ -171,8 +171,7 @@ async def process_ai(
                 "gen_prompt": ai_vision_res.get('gen_prompt', "")
             }
 
-                "gen_prompt": ai_vision_res.get('gen_prompt', "")
-            }
+
 
         elif mode == 'pro':
             # Pro Mode (formerly Lab Mode) - Integrated Flow
