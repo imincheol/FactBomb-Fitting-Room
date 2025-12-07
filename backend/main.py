@@ -58,6 +58,7 @@ async def health_check():
 async def process_baseline(
     user_image: UploadFile = File(...), 
     model_image: UploadFile = File(...),
+    language: str = Form("ko")
 ):
     print("Received Baseline Request")
     try:
@@ -89,7 +90,7 @@ async def process_baseline(
         real_model_heads = round(1 / model_ratios.get('head_stat_ratio', 0.15), 1)
 
         # 3. Generate Baseline Result (Standard Mode)
-        legacy_analysis = analyze_body_proportions(user_ratios, model_ratios)
+        legacy_analysis = analyze_body_proportions(user_ratios, model_ratios, language=language)
         legacy_analysis['fact_bomb'] = legacy_analysis.get('comment')
         
         legacy_analysis['result_heads'] = visual_data['result_heads']
@@ -129,7 +130,8 @@ async def process_ai(
     lab_flow: str = Form(None),
     # Receive ratios as JSON string to avoid complex parsing or re-calc
     user_ratios_json: str = Form(None), 
-    model_ratios_json: str = Form(None)
+    model_ratios_json: str = Form(None),
+    language: str = Form("ko")
 ):
     print(f"Received AI Request. Mode: {mode}")
     import json
@@ -150,7 +152,7 @@ async def process_ai(
         
         if mode == 'full_ai':
             print("Running Active Mode: Full AI")
-            ai_vision_res = analyze_full_ai_mode(user_bytes, model_bytes)
+            ai_vision_res = analyze_full_ai_mode(user_bytes, model_bytes, language=language)
             
             u_h = ai_vision_res.get('user_heads', real_user_heads)
             m_h = ai_vision_res.get('model_heads', real_model_heads)

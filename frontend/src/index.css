@@ -3,20 +3,35 @@
     line-height: 1.5;
     font-weight: 400;
 
+    /* Base Colors - Dark Mode (Default) */
     --bg-primary: #000000;
     --bg-secondary: #111111;
     --bg-tertiary: #1a1a1a;
+    --bg-card: #0f172a;
+    --bg-card-inner: #1e293b;
 
     --text-primary: #ffffff;
     --text-secondary: #888888;
     --text-tertiary: #444444;
+    --text-highlight: #cbd5e1;
 
-    --accent-color: #ffffff;
-    /* Stark white accent for high contrast */
     --border-color: #333333;
     --border-focus: #666666;
+    --border-subtle: #475569;
 
-    --spacing-unit: 1rem;
+    --accent-color: #ffffff;
+
+    --status-online-bg: rgba(16, 185, 129, 0.2);
+    --status-online-border: #059669;
+    --status-online-text: #34d399;
+
+    --status-checking-bg: rgba(59, 130, 246, 0.2);
+    --status-checking-border: #3b82f6;
+    --status-checking-text: #60a5fa;
+
+    --status-offline-bg: rgba(239, 68, 68, 0.2);
+    --status-offline-border: #b91c1c;
+    --status-offline-text: #fca5a5;
 
     color-scheme: dark;
     color: var(--text-primary);
@@ -26,6 +41,66 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light Mode Overrides */
+body.light-mode {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-card: #f8fafc;
+    --bg-card-inner: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --text-highlight: #334155;
+
+    --border-color: #e2e8f0;
+    --border-focus: #cbd5e1;
+    --border-subtle: #cbd5e1;
+
+    --accent-color: #0f172a;
+
+    --status-online-bg: rgba(16, 185, 129, 0.1);
+    --status-online-border: #10b981;
+    --status-online-text: #059669;
+
+    --status-checking-bg: rgba(59, 130, 246, 0.1);
+    --status-checking-border: #3b82f6;
+    --status-checking-text: #2563eb;
+
+    --status-offline-bg: rgba(239, 68, 68, 0.1);
+    --status-offline-border: #ef4444;
+    --status-offline-text: #dc2626;
+
+    color-scheme: light;
+}
+
+/* Header Controls Container */
+.header-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+.theme-toggle-btn {
+    font-size: 1.2rem;
+    padding: 0.5em;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--bg-secondary);
 }
 
 body {
@@ -95,7 +170,7 @@ button:focus-visible {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 4rem 2rem;
+    padding: 2rem 1rem;
     text-align: center;
     box-sizing: border-box;
 }
@@ -103,7 +178,7 @@ button:focus-visible {
 .tagline {
     font-size: clamp(0.9rem, 1.5vw, 1.1rem);
     color: var(--text-secondary);
-    margin-bottom: 4rem;
+    margin-bottom: 2rem;
     font-weight: 300;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -111,18 +186,29 @@ button:focus-visible {
 
 .upload-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    /* Gap creates a divider look if bg is different, or use regular gap */
+    grid-template-columns: 1fr;
+    gap: 2rem;
     margin-bottom: 4rem;
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
     padding: 4rem 0;
 }
 
+@media (min-width: 768px) {
+    .upload-section {
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        /* Divider gap */
+    }
+
+    .upload-section>.card:first-child {
+        border-right: 1px solid var(--border-color);
+    }
+}
+
 .card {
     background: transparent;
-    padding: 0 2rem;
+    padding: 1rem;
     width: 100%;
     box-sizing: border-box;
     display: flex;
@@ -132,17 +218,10 @@ button:focus-visible {
     box-shadow: none;
 }
 
-/* Add vertical divider between cards */
-.upload-section>.card:first-child {
-    border-right: 1px solid var(--border-color);
-}
-
-
-
 .card h3 {
     margin-top: 0;
     margin-bottom: 1rem;
-    color: #e2e8f0;
+    color: var(--text-highlight);
 }
 
 /* --- Preview Area --- */
@@ -153,21 +232,21 @@ button:focus-visible {
     /* Consistent aspect ratio for portraits */
     min-height: 300px;
     max-height: 500px;
-    border: 2px dashed #475569;
+    border: 2px dashed var(--border-subtle);
     border-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     margin-bottom: 1rem;
-    background: #0f172a;
+    background: var(--bg-card);
     position: relative;
     cursor: pointer;
     transition: border-color 0.2s;
 }
 
 .preview-area:hover {
-    border-color: #94a3b8;
+    border-color: var(--text-secondary);
 }
 
 .preview-area img {
@@ -175,11 +254,10 @@ button:focus-visible {
     height: 100%;
     object-fit: contain;
     /* Shows full image */
-    background: #000;
 }
 
 .preview-placeholder {
-    color: #64748b;
+    color: var(--text-secondary);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -203,10 +281,10 @@ button:focus-visible {
 }
 
 .error-message {
-    color: #f43f5e;
+    color: var(--status-offline-text);
     margin-bottom: 1rem;
     font-weight: 600;
-    background: rgba(244, 63, 94, 0.1);
+    background: var(--status-offline-bg);
     padding: 0.5rem 1rem;
     border-radius: 8px;
 }
@@ -256,35 +334,37 @@ button:focus-visible {
 }
 
 .result-image-area {
-    background: #0f172a;
+    background: var(--bg-card);
     border-radius: 8px;
     padding: 1rem;
+    /* Reduce fixed heights to allow content to dictate size, but ensure min height */
     min-height: 400px;
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 1px solid #334155;
+    border: 1px solid var(--border-color);
     margin-bottom: 1.5rem;
 }
 
 .result-image {
     width: 100%;
     height: auto;
-    max-height: 650px;
+    /* Remove strict max-height that clips tall images on mobile */
+    /* max-height: 80vh;  */
     object-fit: contain;
     border-radius: 4px;
 }
 
 .analysis-box {
-    background: #1e293b;
+    background: var(--bg-card-inner);
     padding: 1.5rem;
     border-radius: 0.8rem;
     text-align: left;
-    border: 1px solid #334155;
+    border: 1px solid var(--border-color);
 }
 
 .analysis-title {
-    color: #cbd5e1;
+    color: var(--text-highlight);
     margin: 0 0 1rem 0;
     font-size: 1.1rem;
     display: flex;
@@ -296,7 +376,7 @@ button:focus-visible {
     font-size: 1rem;
     line-height: 1.6;
     white-space: pre-line;
-    color: #e2e8f0;
+    color: var(--text-primary);
 }
 
 .stats-grid {
@@ -305,30 +385,31 @@ button:focus-visible {
     gap: 1rem;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #334155;
+    border-top: 1px solid var(--border-color);
 }
 
 .stat-item {
     background: rgba(15, 23, 42, 0.5);
+    /* Keep dark for consistency or use var */
     padding: 0.75rem;
     border-radius: 6px;
     text-align: center;
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
 }
 
 .stat-value {
     display: block;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #f1f5f9;
+    color: var(--text-primary);
     margin-top: 0.25rem;
 }
 
 .secondary-btn {
     background: transparent;
-    border: 1px solid #475569;
-    color: #cbd5e1;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-highlight);
     padding: 0.6rem 1.2rem;
     border-radius: 0.5rem;
     font-size: 0.95rem;
@@ -340,18 +421,18 @@ button:focus-visible {
 }
 
 .secondary-btn:hover {
-    background: #334155;
-    border-color: #94a3b8;
-    color: white;
+    background: var(--bg-secondary);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 /* --- Debug Section --- */
 .debug-section {
     margin-top: 2rem;
     padding: 1.5rem;
-    background: #0f172a;
+    background: var(--bg-card);
     border-radius: 1rem;
-    border: 1px solid #334155;
+    border: 1px solid var(--border-color);
     width: 100%;
     max-width: 800px;
     box-sizing: border-box;
@@ -370,7 +451,7 @@ button:focus-visible {
 }
 
 .debug-img-wrapper h5 {
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin: 0 0 0.5rem 0;
 }
 
@@ -378,9 +459,11 @@ button:focus-visible {
     width: 100%;
     height: auto;
     border-radius: 6px;
-    border: 1px solid #334155;
+    border: 1px solid var(--border-color);
     background: #000;
+    /* Images usually look better on black */
 }
+
 
 @keyframes fadeIn {
     from {

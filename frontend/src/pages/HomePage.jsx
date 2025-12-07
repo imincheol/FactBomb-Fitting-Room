@@ -12,6 +12,7 @@ function HomePage() {
 
     const [baselineData, setBaselineData] = useState(null)
     const [showDebug, setShowDebug] = useState(false)
+    const [theme, setTheme] = useState('dark') // Default theme
 
     // Server Health Check State
     const [serverStatus, setServerStatus] = useState('checking') // 'checking', 'online', 'offline'
@@ -74,6 +75,15 @@ function HomePage() {
             if (intervalId) clearInterval(intervalId)
         }
     }, [serverStatus, retryCount])
+
+    // Theme Effect
+    useEffect(() => {
+        document.body.className = theme === 'light' ? 'light-mode' : '';
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    };
 
 
     const handleImageUpload = (e, type) => {
@@ -164,7 +174,14 @@ function HomePage() {
                     <div style={{ display: 'flex', justifyContent: 'center', margin: '1rem 0' }}>
                         <button
                             className="secondary-btn"
-                            onClick={() => handleDownload(data.image, 'factbomb_fit_check.jpg')}
+                            onClick={() => {
+                                const date = new Date();
+                                const yymmdd = date.toISOString().slice(2, 10).replace(/-/g, '');
+                                const hhmm = date.toTimeString().slice(0, 5).replace(':', '');
+                                const ss = date.toTimeString().slice(6, 8);
+                                const filename = `factbomb-fitting-room-${yymmdd}-${hhmm}-${ss}.jpg`;
+                                handleDownload(data.image, filename);
+                            }}
                         >
                             {t('result.download')}
                         </button>
@@ -188,12 +205,30 @@ function HomePage() {
     return (
         <main className="container">
             <header style={{ marginBottom: '2rem', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '10px' }}>
-                    <button onClick={() => i18n.changeLanguage('ko')} style={{ opacity: i18n.language === 'ko' ? 1 : 0.5 }}>🇰🇷</button>
-                    <button onClick={() => i18n.changeLanguage('vi')} style={{ opacity: i18n.language === 'vi' ? 1 : 0.5 }}>🇻🇳</button>
-                    <button onClick={() => i18n.changeLanguage('en')} style={{ opacity: i18n.language === 'en' ? 1 : 0.5 }}>🇺🇸</button>
+                <div className="header-controls">
+                    <button className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle Theme">
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                        <button onClick={() => i18n.changeLanguage('ko')} style={{ opacity: i18n.language === 'ko' ? 1 : 0.5 }}>🇰🇷</button>
+                        <button onClick={() => i18n.changeLanguage('vi')} style={{ opacity: i18n.language === 'vi' ? 1 : 0.5 }}>🇻🇳</button>
+                        <button onClick={() => i18n.changeLanguage('en')} style={{ opacity: i18n.language === 'en' ? 1 : 0.5 }}>🇺🇸</button>
+                    </div>
                 </div>
                 <h1>{t('title')}</h1>
+                {i18n.language !== 'en' && (
+                    <h2 style={{
+                        fontSize: '1rem',
+                        color: 'var(--text-secondary)',
+                        marginTop: '-0.5rem',
+                        marginBottom: '0.5rem',
+                        fontWeight: 'normal',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                    }}>
+                        (FactBomb Fitting Room)
+                    </h2>
+                )}
                 <p className="tagline">{t('tagline')}</p>
             </header>
 
@@ -312,8 +347,9 @@ function HomePage() {
 
             {/* RESULT SECTION */}
             {baselineData && (
+
                 <section className="result-section">
-                    <h2 style={{ marginBottom: '2rem' }}>Analysis Result</h2>
+                    <h2 style={{ marginBottom: '2rem', color: 'var(--text-primary)' }}>{t('result.title')}</h2>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center', width: '100%' }}>
                         <ResultCard
