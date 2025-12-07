@@ -9,8 +9,7 @@ function LabPage() {
     // -- Lab Specific State --
     const [userImage, setUserImage] = useState(null)
     const [modelImage, setModelImage] = useState(null)
-    // resultImage is not strictly used in lead logic but kept for consistency if needed, though baselineData covers it.
-    // I'll leave it out if unused, or keep it if I see it used. It was declared in original but not used in view_file output.
+
 
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -218,7 +217,7 @@ function LabPage() {
                 </div>
 
                 <div style={{ marginTop: '1rem', padding: '1rem', background: isBaseline ? '#1e293b' : '#4c1d95', borderRadius: '0.5rem' }}>
-                    <h4 style={{ color: isBaseline ? '#cbd5e1' : '#d8b4fe', margin: '0 0 0.5rem 0' }}>{t('result.fact_bomb_title') || "FactBomb 💣"}</h4>
+                    <h4 style={{ color: isBaseline ? '#cbd5e1' : '#d8b4fe', margin: '0 0 0.5rem 0' }}>{t('result.fact_bomb_title') || "Chakshot Analysis 💣"}</h4>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-line' }}>{data.analysis.fact_bomb}</p>
 
                     <hr style={{ borderColor: isBaseline ? '#334155' : '#6d28d9', margin: '1rem 0' }} />
@@ -246,23 +245,11 @@ function LabPage() {
                 </div>
 
                 <h1>
-                    {t('title') || "FactBomb Fitting Room"}
+                    {t('title') || "Chakshot Fitting Room"}
                     <span style={{ fontSize: '0.4em', color: '#f472b6', border: '1px solid #f472b6', padding: '2px 8px', borderRadius: '10px', verticalAlign: 'middle', marginLeft: '10px' }}>LAB</span>
                 </h1>
 
-                {i18n.language !== 'en' && (
-                    <h2 style={{
-                        fontSize: '1rem',
-                        color: 'var(--text-secondary)',
-                        marginTop: '-0.5rem',
-                        marginBottom: '0.5rem',
-                        fontWeight: 'normal',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
-                    }}>
-                        (FactBomb Fitting Room)
-                    </h2>
-                )}
+
 
                 <p className="tagline" style={{ marginTop: '0.5rem' }}>
                     {t('tagline') || "Shockingly Realistic. Brutally Honest."} (Experimental Build)

@@ -39,7 +39,7 @@ __version__ = "1.0.0"
 # Allow CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for MVP
+    allow_origins=["https://chakshot.com", "http://localhost:5173", "https://smh-fassion.vercel.app"], # Updated for security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

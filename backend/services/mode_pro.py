@@ -84,7 +84,7 @@ def run_pro_mode_analysis(user_bytes, model_bytes, visual_data, language="ko"):
                     "fabric_type": "string (e.g. Stiff Cotton)"
                 }}
             }},
-            "comment": "string ({lang_target} Fact Bomb. Comment on the specific fit failure visible in the Blueprint. e.g. 'The geometry is correct, but the physics are screaming. That shirt button is holding on for dear life.')",
+            "comment": "string ({lang_target} Chakshot Analysis. Comment on the specific fit failure visible in the Blueprint. e.g. 'The geometry is correct, but the physics are screaming. That shirt button is holding on for dear life.')",
             "gen_prompt": "string (Detailed Image Prompt. Describe the visual state of Image 5 but with 8k texture. 'Photorealistic shot of person, tight shirt buttons straining, fabric wrinkled horizontally across belly, short pant legs bunching on shoes, awkward stance, high detail.')"
         }}
         """

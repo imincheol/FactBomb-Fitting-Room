@@ -1,5 +1,5 @@
 export default {
-    "title": "FactBomb Fitting Room",
+    "title": "Chakshot (착샷)",
     "tagline": "Shockingly Realistic. Brutally Honest.",
     "server": {
         "checking": "🔄 Checking Server...",
@@ -29,7 +29,7 @@ export default {
         "visual_check_failed": "Visual Check Failed",
         "nano_banana": "Nano Banana provided text analysis only.",
         "download": "📥 Download Result",
-        "fact_bomb_title": "FactBomb 💣",
+        "fact_bomb_title": "Chakshot Report 💣",
         "you": "🧍 You:",
         "model": "✨ Model:",
         "ratio_unit": "Heads",

@@ -59,7 +59,7 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
             "    \"model_original_ratio\": \"number (e.g., 8.2 heads)\",",
             "    \"key_change_point\": \"string (e.g., Head size scaled up 15%, Legs shortened, Hips widened)\"",
             "  },",
-            f"  \"fact_bomb_comment\": \"string (Humorous {lang_target} comment. e.g., '모델분은 8등신인데... 고객님 비율을 적용하니 머리가 꽤 커졌네요! 현실적인 핏입니다.')\",",
+            f"  \"fact_bomb_comment\": \"string (Humorous {lang_target} Chakshot Analysis. e.g., '모델분은 8등신인데... 고객님 비율을 적용하니 머리가 꽤 커졌네요! 현실적인 핏입니다.')\",",
             "  \"gen_prompt\": \"string (Final prompt: A photo of the [GENDER] MODEL from Image 2, but modified to have the BODY PROPORTIONS of Image 1. The face remains the original [GENDER] model's face. The body is morphed: Head is LARGER, legs are SHORTER/LONGER, and width is adjusted to match User's ratio. Wearing the same outfit, but the fit reflects the new proportions.)\"",
             "}",
             img_user, img_model
