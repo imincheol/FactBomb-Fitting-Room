@@ -1,11 +1,17 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { API_BASE_URL } from '../config'
 import '../index.css'
 
 function LabPage() {
+    const { t, i18n } = useTranslation()
+
+    // -- Lab Specific State --
     const [userImage, setUserImage] = useState(null)
     const [modelImage, setModelImage] = useState(null)
-    const [resultImage, setResultImage] = useState(null)
+    // resultImage is not strictly used in lead logic but kept for consistency if needed, though baselineData covers it.
+    // I'll leave it out if unused, or keep it if I see it used. It was declared in original but not used in view_file output.
+
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [mode, setMode] = useState('legacy') // 'legacy' | 'lab' | 'full_ai'
@@ -16,8 +22,68 @@ function LabPage() {
     const [isAiLoading, setIsAiLoading] = useState(false)
     const [showDebug, setShowDebug] = useState(false)
 
+    // -- Home Shared State --
+    const [theme, setTheme] = useState('dark')
+    const [serverStatus, setServerStatus] = useState('checking') // 'checking', 'online', 'offline'
+    const [retryCount, setRetryCount] = useState(0)
+    const [lastChecked, setLastChecked] = useState(null)
+
     const userFileInputRef = useRef(null)
     const modelFileInputRef = useRef(null)
+
+    // -- Server Health Check Logic --
+    const checkServerStatus = async (isManual = false) => {
+        if (!isManual && serverStatus === 'offline' && retryCount >= 10) {
+            return; // Stop retrying after 10 failed attempts
+        }
+
+        if (isManual) {
+            setRetryCount(0); // Reset retry count on manual check
+            setServerStatus('checking');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/health`)
+            if (response.ok) {
+                setServerStatus('online')
+                setRetryCount(0)
+                setLastChecked(new Date())
+            } else {
+                throw new Error('Server not ready')
+            }
+        } catch (err) {
+            console.error("Server Check Failed:", err)
+            setServerStatus('offline')
+            if (!isManual) {
+                setRetryCount(prev => prev + 1)
+            }
+        }
+    }
+
+    // Initial Check & Interval
+    useEffect(() => {
+        checkServerStatus()
+        let intervalId;
+
+        if (serverStatus === 'online') {
+            intervalId = setInterval(() => checkServerStatus(), 5 * 60 * 1000)
+        } else if (serverStatus === 'offline' && retryCount < 10) {
+            intervalId = setInterval(() => checkServerStatus(), 60 * 1000)
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId)
+        }
+    }, [serverStatus, retryCount])
+
+    // Theme Effect
+    useEffect(() => {
+        document.body.className = theme === 'light' ? 'light-mode' : '';
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    };
 
     const handleImageUpload = (e, type) => {
         const file = e.target.files[0]
@@ -32,13 +98,17 @@ function LabPage() {
         // Clear result if inputs change
         setBaselineData(null)
         setActiveData(null)
-        setResultImage(null)
         setError(null)
     }
 
     const handleProcess = async () => {
         if (!userImage || !modelImage) {
-            setError("Please upload both photos!")
+            setError(t('upload.error_both_photos') || "Please upload both photos!")
+            return
+        }
+
+        if (serverStatus !== 'online') {
+            setError(t('upload.error_server_offline') || "Server is offline")
             return
         }
 
@@ -54,6 +124,7 @@ function LabPage() {
             const formData = new FormData()
             formData.append('user_image', userImage.file)
             formData.append('model_image', modelImage.file)
+            formData.append('language', i18n.language)
 
             const response = await fetch(`${API_BASE_URL}/process-baseline`, {
                 method: 'POST',
@@ -84,6 +155,7 @@ function LabPage() {
                 aiFormData.append('model_image', modelImage.file)
                 aiFormData.append('mode', mode)
                 if (mode === 'lab') aiFormData.append('lab_flow', labFlow)
+                aiFormData.append('language', i18n.language)
 
                 // Pass meta data
                 aiFormData.append('user_ratios_json', JSON.stringify(currentBaseline.meta.user_ratios))
@@ -129,26 +201,28 @@ function LabPage() {
         return (
             <div className="card" style={{ flex: '1 1 300px', minWidth: '300px', maxWidth: '450px', border: isBaseline ? '1px solid #475569' : '2px solid #a78bfa', background: isBaseline ? 'rgba(30, 41, 59, 0.5)' : 'rgba(46, 16, 101, 0.5)' }}>
                 <h3 style={{ color: isBaseline ? '#94a3b8' : '#a78bfa' }}>{title}</h3>
-                <div className="preview-area" style={{ cursor: 'default', background: !data.image ? '#0f172a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+                {/* Updated Image Display: Fill/Fit Fix */}
+                <div className="preview-area" style={{ height: 'auto', minHeight: '300px', cursor: 'default', background: !data.image ? '#0f172a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {data.image ? (
-                        <img src={`data:image/jpeg;base64,${data.image}`} alt={title} />
+                        <img src={`data:image/jpeg;base64,${data.image}`} alt={title} style={{ width: '100%', height: 'auto', maxHeight: '600px', objectFit: 'contain' }} />
                     ) : (
                         <div style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
                             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🍌🚫</span>
-                            <p><strong>Visual Check Failed</strong></p>
+                            <p><strong>{t('result.visual_check_failed') || "Visual Check Failed"}</strong></p>
                             <p style={{ fontSize: '0.8rem' }}>Nano Banana provided text analysis only.</p>
                         </div>
                     )}
                 </div>
 
                 <div style={{ marginTop: '1rem', padding: '1rem', background: isBaseline ? '#1e293b' : '#4c1d95', borderRadius: '0.5rem' }}>
-                    <h4 style={{ color: isBaseline ? '#cbd5e1' : '#d8b4fe', margin: '0 0 0.5rem 0' }}>FactBomb 💣</h4>
+                    <h4 style={{ color: isBaseline ? '#cbd5e1' : '#d8b4fe', margin: '0 0 0.5rem 0' }}>{t('result.fact_bomb_title') || "FactBomb 💣"}</h4>
                     <p style={{ fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-line' }}>{data.analysis.fact_bomb}</p>
 
                     <hr style={{ borderColor: isBaseline ? '#334155' : '#6d28d9', margin: '1rem 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#e2e8f0' }}>
-                        <span>🧍 You: <strong>{data.analysis.user_heads} 등신</strong></span>
-                        <span>✨ Model: <strong>{data.analysis.model_heads} 등신</strong></span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#e2e8f0', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <span>{t('result.you') || "You"} <strong>{data.analysis.user_heads} {t('result.ratio_unit') || "heads"}</strong></span>
+                        <span>{t('result.model') || "Model"} <strong>{data.analysis.model_heads} {t('result.ratio_unit') || "heads"}</strong></span>
                     </div>
                 </div>
             </div>
@@ -157,18 +231,99 @@ function LabPage() {
 
     return (
         <main className="container">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1>FactBomb Fitting Room <span style={{ fontSize: '0.5em', color: '#f472b6', border: '1px solid #f472b6', padding: '2px 8px', borderRadius: '10px', verticalAlign: 'middle' }}>LAB</span></h1>
-                    <p className="tagline" style={{ marginTop: '0.5rem' }}>Shockingly Realistic. Brutally Honest. (Experimental Build)</p>
+            <header style={{ marginBottom: '2rem', position: 'relative' }}>
+                <div className="header-controls">
+                    <button className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle Theme">
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                        <button onClick={() => i18n.changeLanguage('ko')} style={{ opacity: i18n.language === 'ko' ? 1 : 0.5 }}>🇰🇷</button>
+                        <button onClick={() => i18n.changeLanguage('vi')} style={{ opacity: i18n.language === 'vi' ? 1 : 0.5 }}>🇻🇳</button>
+                        <button onClick={() => i18n.changeLanguage('en')} style={{ opacity: i18n.language === 'en' ? 1 : 0.5 }}>🇺🇸</button>
+                    </div>
                 </div>
-                <a href="/" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem' }}>Go to Basic &rarr;</a>
+
+                <h1>
+                    {t('title') || "FactBomb Fitting Room"}
+                    <span style={{ fontSize: '0.4em', color: '#f472b6', border: '1px solid #f472b6', padding: '2px 8px', borderRadius: '10px', verticalAlign: 'middle', marginLeft: '10px' }}>LAB</span>
+                </h1>
+
+                {i18n.language !== 'en' && (
+                    <h2 style={{
+                        fontSize: '1rem',
+                        color: 'var(--text-secondary)',
+                        marginTop: '-0.5rem',
+                        marginBottom: '0.5rem',
+                        fontWeight: 'normal',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                    }}>
+                        (FactBomb Fitting Room)
+                    </h2>
+                )}
+
+                <p className="tagline" style={{ marginTop: '0.5rem' }}>
+                    {t('tagline') || "Shockingly Realistic. Brutally Honest."} (Experimental Build)
+                </p>
+
+                <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+                    <a href="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', borderBottom: '1px dashed currentColor' }}>
+                        &larr; {t('back_to_basic') || "Go to Basic Version"}
+                    </a>
+                </div>
             </header>
+
+            {/* Server Status Banner */}
+            <div role="status" aria-live="polite" style={{
+                margin: '0 auto 2rem auto',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                width: '100%',
+                maxWidth: '600px',
+                textAlign: 'center',
+                backgroundColor: serverStatus === 'online' ? 'rgba(16, 185, 129, 0.2)' :
+                    serverStatus === 'checking' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                border: `1px solid ${serverStatus === 'online' ? '#059669' :
+                    serverStatus === 'checking' ? '#3b82f6' : '#b91c1c'}`,
+                color: serverStatus === 'online' ? '#34d399' :
+                    serverStatus === 'checking' ? '#60a5fa' : '#fca5a5',
+                boxSizing: 'border-box'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span>
+                        {serverStatus === 'checking' && (t('server.checking') || "Checking Server...")}
+                        {serverStatus === 'online' && (t('server.online') || "Server Online")}
+                        {serverStatus === 'offline' && (t('server.offline') || "Server Offline")}
+                    </span>
+                    {serverStatus !== 'online' && (
+                        <button
+                            onClick={() => checkServerStatus(true)}
+                            aria-label="Refresh connection"
+                            style={{
+                                padding: '4px 8px',
+                                fontSize: '0.8rem',
+                                background: '#334155',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {t('server.refresh') || "Refresh"}
+                        </button>
+                    )}
+                </div>
+                {serverStatus === 'offline' && retryCount > 0 && retryCount < 10 && (
+                    <div style={{ fontSize: '0.8rem', marginTop: '4px', opacity: 0.8 }}>
+                        {t('server.retrying', { count: retryCount }) || `Retrying... (${retryCount})`}
+                    </div>
+                )}
+            </div>
 
             <section className="upload-section">
                 {/* User Photo Card */}
                 <div className="card">
-                    <h3>1. Your Real Body</h3>
+                    <h3>{t('upload.user_title') || "1. Your Real Body"}</h3>
                     <div className="preview-area" onClick={() => userFileInputRef.current.click()}>
                         <input
                             type="file"
@@ -182,16 +337,16 @@ function LabPage() {
                         ) : (
                             <div className="preview-placeholder">
                                 <span aria-hidden="true">📸</span>
-                                <span>Click to Upload</span>
+                                <span style={{ textAlign: 'center', whiteSpace: 'pre-line' }}>{t('upload.user_placeholder') || "Click to Upload"}</span>
                             </div>
                         )}
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Full body shot required</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('upload.user_helper') || "Full body shot required"}</p>
                 </div>
 
                 {/* Model Photo Card */}
                 <div className="card">
-                    <h3>2. The Dream Fit</h3>
+                    <h3>{t('upload.model_title') || "2. The Dream Fit"}</h3>
                     <div className="preview-area" onClick={() => modelFileInputRef.current.click()}>
                         <input
                             type="file"
@@ -205,11 +360,11 @@ function LabPage() {
                         ) : (
                             <div className="preview-placeholder">
                                 <span aria-hidden="true">👕</span>
-                                <span>Click to Upload</span>
+                                <span style={{ textAlign: 'center', whiteSpace: 'pre-line' }}>{t('upload.model_placeholder') || "Click to Upload"}</span>
                             </div>
                         )}
                     </div>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Shopping mall model shot</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('upload.model_helper') || "Shopping mall model shot"}</p>
                 </div>
             </section>
 
@@ -315,9 +470,10 @@ function LabPage() {
                 <button
                     className="action-btn"
                     onClick={handleProcess}
-                    disabled={loading || !userImage || !modelImage}
+                    disabled={loading || !userImage || !modelImage || serverStatus !== 'online'}
+                    style={{ opacity: (serverStatus !== 'online') ? 0.5 : 1, cursor: (serverStatus !== 'online') ? 'not-allowed' : 'pointer' }}
                 >
-                    {loading ? 'Crunching Baseline...' : (isAiLoading ? 'Analyzing AI...' : 'Reality Check! 💥')}
+                    {loading ? (t('action.crunching') || 'Crunching Baseline...') : (isAiLoading ? 'Analyzing AI...' : (t('action.button') || 'Reality Check! 💥'))}
                 </button>
             </section>
 
