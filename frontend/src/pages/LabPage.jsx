@@ -9,8 +9,7 @@ function LabPage() {
     // -- Lab Specific State --
     const [userImage, setUserImage] = useState(null)
     const [modelImage, setModelImage] = useState(null)
-    // resultImage is not strictly used in lead logic but kept for consistency if needed, though baselineData covers it.
-    // I'll leave it out if unused, or keep it if I see it used. It was declared in original but not used in view_file output.
+
 
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)

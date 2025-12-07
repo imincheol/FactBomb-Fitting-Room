@@ -1,7 +1,7 @@
-# FactBomb Fitting Room: System Architecture
+# Chakshot (착샷) System Architecture
 
 ## 1. Project Overview
-**FactBomb Fitting Room** is a brutally honest, hyper-realistic clothes fitting application.
+**Chakshot (착샷)** is a brutally honest, hyper-realistic clothes fitting application.
 Unlike traditional virtual try-ons that beautify the user, this app focuses on **Proportion Reality Check**.
 It visualizes how a specific outfit would look on the user's *actual* body proportions (Head-to-Body ratio, Leg length, Shoulder width).
 
