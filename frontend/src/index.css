@@ -17,23 +17,26 @@ body {
     margin: 0;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    /* Changed from center to allow scrolling on mobile */
     min-width: 320px;
     min-height: 100vh;
     background: #0f172a;
-    /* Slate 900 */
     color: #e2e8f0;
+    overflow-x: hidden;
+    /* Prevent horizontal scroll */
 }
 
 h1 {
-    font-size: 5em;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    /* Responsive font size */
     line-height: 1.1;
     background: linear-gradient(to right, #f472b6, #a78bfa, #22d3ee);
-    /* Pink to Purple to Cyan */
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     margin-bottom: 0.5rem;
+    margin-top: 0;
 }
 
 button {
@@ -45,7 +48,7 @@ button {
     font-family: inherit;
     background-color: #1a1a1a;
     cursor: pointer;
-    transition: border-color 0.25s;
+    transition: border-color 0.25s, background-color 0.25s;
 }
 
 button:hover {
@@ -59,14 +62,17 @@ button:focus-visible {
 
 /* Custom Styles */
 .container {
-    max-width: 2400px;
+    width: 100%;
+    max-width: 1200px;
+    /* Standard wide constrained width */
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 1rem;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .tagline {
-    font-size: 2.4rem;
+    font-size: clamp(1rem, 2vw, 1.5rem);
     color: #94a3b8;
     margin-bottom: 3rem;
 }
@@ -81,22 +87,29 @@ button:focus-visible {
 
 .card {
     background: #1e293b;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 1rem;
-    width: 400px;
+    width: 100%;
+    max-width: 450px;
+    /* Flexible width */
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     transition: transform 0.2s;
     border: 1px solid #334155;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
 .card:hover {
-    transform: translateY(-5px);
     border-color: #a78bfa;
 }
 
 .preview-area {
     width: 100%;
-    height: 500px;
+    height: 400px;
+    /* Reduced default height */
+    max-height: 50vh;
+    /* Don't take up too much screen on mobile */
     border: 2px dashed #475569;
     border-radius: 0.5rem;
     display: flex;
@@ -127,12 +140,14 @@ button:focus-visible {
     background: linear-gradient(to right, #ec4899, #8b5cf6);
     color: white;
     border: none;
-    padding: 1rem 3rem;
-    font-size: 1.2rem;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
     border-radius: 9999px;
     cursor: pointer;
     transition: all 0.3s;
     box-shadow: 0 10px 15px -3px rgb(236 72 153 / 0.3);
+    width: 100%;
+    max-width: 300px;
 }
 
 .action-btn:hover {
@@ -146,9 +161,57 @@ button:focus-visible {
     transform: none;
 }
 
+.secondary-btn {
+    background: transparent;
+    border: 1px solid #64748b;
+    color: #cbd5e1;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background: rgba(100, 116, 139, 0.2);
+    border-color: #94a3b8;
+    color: #fff;
+}
+
 .result-section {
-    margin-top: 4rem;
+    margin-top: 3rem;
     animation: fadeIn 0.5s ease-out;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Mobile Media Query */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .upload-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .card {
+        width: 100%;
+    }
+
+    .preview-area {
+        height: 300px;
+    }
+
+    .action-btn {
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
 @keyframes fadeIn {
