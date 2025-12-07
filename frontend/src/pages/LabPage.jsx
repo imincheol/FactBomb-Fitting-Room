@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { API_BASE_URL } from '../config'
 import '../index.css'
 
 function LabPage() {
@@ -54,7 +55,6 @@ function LabPage() {
             formData.append('user_image', userImage.file)
             formData.append('model_image', modelImage.file)
 
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE_URL}/process-baseline`, {
                 method: 'POST',
                 body: formData,
@@ -89,7 +89,6 @@ function LabPage() {
                 aiFormData.append('user_ratios_json', JSON.stringify(currentBaseline.meta.user_ratios))
                 aiFormData.append('model_ratios_json', JSON.stringify(currentBaseline.meta.model_ratios))
 
-                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
                 const aiRes = await fetch(`${API_BASE_URL}/process-ai`, {
                     method: 'POST',
                     body: aiFormData

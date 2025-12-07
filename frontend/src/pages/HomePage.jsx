@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 import '../index.css'
 
 function HomePage() {
@@ -18,7 +19,7 @@ function HomePage() {
     const userFileInputRef = useRef(null)
     const modelFileInputRef = useRef(null)
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    // Health Check Logic
 
     // Health Check Logic
     const checkServerStatus = async (isManual = false) => {

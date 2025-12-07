@@ -35,6 +35,7 @@ except ImportError:
     from services.lab_service import run_experiment_flow_a, run_experiment_flow_b
 
 app = FastAPI()
+__version__ = "1.0.0"
 
 # Allow CORS for frontend
 app.add_middleware(
@@ -44,6 +45,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/version")
+async def get_version():
+    return {"version": __version__}
 
 @app.get("/health")
 async def health_check():
