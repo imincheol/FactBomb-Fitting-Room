@@ -54,7 +54,8 @@ function LabPage() {
             formData.append('user_image', userImage.file)
             formData.append('model_image', modelImage.file)
 
-            const response = await fetch('http://localhost:8000/process-baseline', {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${API_BASE_URL}/process-baseline`, {
                 method: 'POST',
                 body: formData,
             })
@@ -88,7 +89,8 @@ function LabPage() {
                 aiFormData.append('user_ratios_json', JSON.stringify(currentBaseline.meta.user_ratios))
                 aiFormData.append('model_ratios_json', JSON.stringify(currentBaseline.meta.model_ratios))
 
-                const aiRes = await fetch('http://localhost:8000/process-ai', {
+                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const aiRes = await fetch(`${API_BASE_URL}/process-ai`, {
                     method: 'POST',
                     body: aiFormData
                 })
