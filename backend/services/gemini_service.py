@@ -175,8 +175,12 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
             "   - Pose: MUST Maintain the EXACT POSE of Image 2 (Model).",
             "   - Visualization: A person with User's body specs (Height/Weight/Type) standing in Model's exact Pose, wearing Model's Clothes.",
             "   - Quality: Photorealistic, High Resolution.",
+            "CONTEXT: This is a 'FactBomb Fitting Room'. The goal is REALITY CHECKS, not beautification.",
+            "CRITICAL: Do NOT alter the clothes to fit the user perfectly. If the User is larger/smaller, show the clothes fitting tightly or loosely as they would in real life. Keep the 'Model Clothing' size/shape ORIGINAL.",
             "Return JSON: {",
             "  'user_heads': number, 'model_heads': number,",
+            "  'debug_user_info': string (Summary of Step 1 Analysis),",
+            "  'debug_model_info': string (Summary of Step 2 Analysis),",
             f"  'comment': string (Fact-based Humorous {lang_target} Critique),",
             "  'gen_prompt': string (The Detailed English Prompt described in Step 4)"
             "}",
@@ -194,6 +198,9 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
         if match:
             try:
                 data = json.loads(match.group(0))
+                # Log Debug Info
+                print(f"\n[DEBUG] Gemini Analysis - User: {data.get('debug_user_info', 'N/A')}")
+                print(f"[DEBUG] Gemini Analysis - Model: {data.get('debug_model_info', 'N/A')}\n")
             except:
                 data = {"comment": text, "gen_prompt": "A stylish person"}
         else:
@@ -217,13 +224,17 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
             "user_heads": data.get("user_heads", 0),
             "model_heads": data.get("model_heads", 0),
             "comment": final_comment,
-            "image": generated_b64 
+            "image": generated_b64,
+            "debug_user_info": data.get("debug_user_info", ""),
+            "debug_model_info": data.get("debug_model_info", ""),
+            "gen_prompt": data.get("gen_prompt", "")
         }
 
     except Exception as e:
         return {
              "comment": f"Full AI Error: {str(e)}",
-             "user_heads": 0, "model_heads": 0, "image": None
+             "user_heads": 0, "model_heads": 0, "image": None,
+             "debug_user_info": "", "debug_model_info": "", "gen_prompt": ""
          }
 
 def fallback_response(u_h, m_h, msg_prefix=""):

@@ -166,7 +166,10 @@ async def process_ai(
                 "user_heads": u_h,
                 "model_heads": m_h,
                 "result_heads": 0, 
-                "result_ratios": {}
+                "result_ratios": {},
+                "debug_user_info": ai_vision_res.get('debug_user_info', ""),
+                "debug_model_info": ai_vision_res.get('debug_model_info', ""),
+                "gen_prompt": ai_vision_res.get('gen_prompt', "")
             }
 
         elif mode == 'lab':

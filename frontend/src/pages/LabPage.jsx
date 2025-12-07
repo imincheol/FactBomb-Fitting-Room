@@ -524,6 +524,48 @@ function LabPage() {
                             {showDebug && (
                                 <div className="debug-section" style={{ marginTop: '2rem', padding: '1rem', background: '#0f172a', borderRadius: '1rem', border: '1px solid #334155' }}>
                                     <h3 style={{ marginBottom: '1rem' }}>Detailed Metrics 📐</h3>
+
+                                    {/* AI Debug Info */}
+                                    {activeData && activeData.analysis && (activeData.analysis.debug_user_info || activeData.analysis.debug_model_info) && (
+                                        <div style={{ marginBottom: '2rem', padding: '1rem', background: 'rgba(167, 139, 250, 0.1)', borderRadius: '8px', border: '1px solid #a78bfa' }}>
+                                            <h4 style={{ color: '#d8b4fe', marginTop: 0 }}>🤖 AI Analysis Log</h4>
+
+                                            {activeData.analysis.debug_user_info && (
+                                                <div style={{ marginBottom: '1rem' }}>
+                                                    <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '0.3rem' }}>[Step 1] User Analysis:</strong>
+                                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#cbd5e1', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+                                                        {activeData.analysis.debug_user_info}
+                                                    </pre>
+                                                </div>
+                                            )}
+
+                                            {activeData.analysis.debug_model_info && (
+                                                <div>
+                                                    <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '0.3rem' }}>[Step 2] Model Analysis:</strong>
+                                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#cbd5e1', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+                                                        {activeData.analysis.debug_model_info}
+                                                    </pre>
+                                                </div>
+                                            )}
+
+                                            {activeData.analysis.gen_prompt && (
+                                                <div style={{ marginTop: '1rem', borderTop: '1px solid #4c1d95', paddingTop: '1rem' }}>
+                                                    <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '0.3rem' }}>[Step 4] Generated Prompt (To Nano Banana):</strong>
+                                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#86efac', fontSize: '0.85rem', fontFamily: 'monospace', background: '#022c22', padding: '0.5rem', borderRadius: '4px' }}>
+                                                        {activeData.analysis.gen_prompt}
+                                                    </pre>
+                                                </div>
+                                            )}
+
+                                            <div style={{ marginTop: '1rem', borderTop: '1px solid #4c1d95', paddingTop: '1rem' }}>
+                                                <strong style={{ color: '#a78bfa', fontSize: '0.8rem' }}>RAW DATA DUMP:</strong>
+                                                <pre style={{ background: '#000', padding: '10px', borderRadius: '4px', overflowX: 'auto', fontSize: '0.7rem', color: '#0f0' }}>
+                                                    {JSON.stringify(activeData.analysis, null, 2)}
+                                                </pre>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <p style={{ color: '#94a3b8', marginBottom: '1rem' }}>Visualizing the warping engine skeletal tracking (Shared Engine).</p>
 
                                     <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
