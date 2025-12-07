@@ -20,7 +20,7 @@ function LabPage() {
     const [baselineData, setBaselineData] = useState(null)
     const [activeData, setActiveData] = useState(null)
     const [isAiLoading, setIsAiLoading] = useState(false)
-    const [showDebug, setShowDebug] = useState(false)
+    const [showDebug, setShowDebug] = useState(true)
 
     // -- Home Shared State --
     const [theme, setTheme] = useState('dark')
@@ -512,70 +512,129 @@ function LabPage() {
 
                     {(baselineData) && (
                         <>
-                            <div style={{ marginTop: '3rem' }}>
+                            <div style={{ marginTop: '3rem', textAlign: 'center' }}>
                                 <button
                                     onClick={() => setShowDebug(!showDebug)}
-                                    style={{ background: 'transparent', border: '1px solid #64748b', color: '#94a3b8', cursor: 'pointer', padding: '0.5rem 1rem', borderRadius: '4px' }}
+                                    style={{
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid #64748b',
+                                        color: '#cbd5e1',
+                                        cursor: 'pointer',
+                                        padding: '0.8rem 1.5rem',
+                                        borderRadius: '2rem',
+                                        fontSize: '0.9rem',
+                                        transition: 'all 0.2s'
+                                    }}
                                 >
-                                    {showDebug ? 'Hide Details' : 'Show Debug Details 🕵️'}
+                                    {showDebug ? '🔽 접기 (Simple View)' : '🧐 AI 상세 분석 리포트 보기 (Expert View)'}
                                 </button>
                             </div>
 
                             {showDebug && (
-                                <div className="debug-section" style={{ marginTop: '2rem', padding: '1rem', background: '#0f172a', borderRadius: '1rem', border: '1px solid #334155' }}>
-                                    <h3 style={{ marginBottom: '1rem' }}>Detailed Metrics 📐</h3>
+                                <div className="debug-section" style={{ marginTop: '2rem', padding: '1.5rem', background: '#0f172a', borderRadius: '1rem', border: '1px solid #334155', animation: 'fadeIn 0.5s' }}>
+                                    <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '0.5rem', color: '#60a5fa' }}>🔎 Professional Analysis Report</h3>
 
-                                    {/* AI Debug Info */}
-                                    {activeData && activeData.analysis && (activeData.analysis.debug_user_info || activeData.analysis.debug_model_info) && (
-                                        <div style={{ marginBottom: '2rem', padding: '1rem', background: 'rgba(167, 139, 250, 0.1)', borderRadius: '8px', border: '1px solid #a78bfa' }}>
-                                            <h4 style={{ color: '#d8b4fe', marginTop: 0 }}>🤖 AI Analysis Log</h4>
+                                    {/* AI Debug Info - Improved Display */}
+                                    {activeData && activeData.analysis && (
+                                        (() => {
+                                            let userInfo = null;
+                                            let modelInfo = null;
+                                            try { userInfo = JSON.parse(activeData.analysis.debug_user_info); } catch (e) { }
+                                            try { modelInfo = JSON.parse(activeData.analysis.debug_model_info); } catch (e) { }
 
-                                            {activeData.analysis.debug_user_info && (
-                                                <div style={{ marginBottom: '1rem' }}>
-                                                    <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '0.3rem' }}>[Step 1] User Analysis:</strong>
-                                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#cbd5e1', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                                                        {activeData.analysis.debug_user_info}
-                                                    </pre>
+                                            return (
+                                                <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', border: '1px solid #475569' }}>
+                                                    <h4 style={{ color: '#a78bfa', marginTop: 0, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        🤖 Gemini 3.0 Pro Vision Logic (VFX Mode)
+                                                    </h4>
+
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                                                        {/* User Column */}
+                                                        <div style={{ flex: '1 1 300px', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid #f472b6' }}>
+                                                            <strong style={{ color: '#fbcfe8', display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>[Step 1] User Body Volume</strong>
+                                                            {userInfo ? (
+                                                                <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#e2e8f0', fontSize: '0.85rem', lineHeight: '1.6' }}>
+                                                                    <li><strong>Shape:</strong> {userInfo.shape_desc || userInfo.body_shape || 'N/A'}</li>
+                                                                    <li><strong>Volume:</strong> {userInfo.volume_factor || userInfo.estimated_height_desc || 'N/A'}</li>
+                                                                    {userInfo.distinct_features && <li><strong>Features:</strong> {userInfo.distinct_features}</li>}
+                                                                </ul>
+                                                            ) : <span style={{ color: '#64748b' }}>No detailed info</span>}
+                                                        </div>
+
+                                                        {/* Model/Outfit Column */}
+                                                        <div style={{ flex: '1 1 300px', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid #818cf8' }}>
+                                                            <strong style={{ color: '#c7d2fe', display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>[Step 2] Clothing Physics</strong>
+                                                            {modelInfo ? (
+                                                                <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#e2e8f0', fontSize: '0.85rem', lineHeight: '1.6' }}>
+                                                                    <li><strong>Fit Status:</strong> {modelInfo.fit_status || modelInfo.estimated_size || 'N/A'}</li>
+                                                                    <li><strong>Stress Points:</strong> {modelInfo.stress_points || modelInfo.fit_style || 'N/A'}</li>
+                                                                    {modelInfo.fabric_type && <li><strong>Fabric:</strong> {modelInfo.fabric_type}</li>}
+                                                                </ul>
+                                                            ) : <span style={{ color: '#64748b' }}>No detailed info</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Fit Simulation Logic (Supports Old & New Keys) */}
+                                                    {modelInfo && (modelInfo.size_mismatch_desc || modelInfo.visual_consequences || modelInfo.fit_status) && (
+                                                        <div style={{ marginBottom: '1.5rem', borderLeft: '3px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '4px' }}>
+                                                            <strong style={{ color: '#fca5a5', display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>[Step 3] Physics Simulation Implication</strong>
+                                                            {modelInfo.size_mismatch_desc && (
+                                                                <div style={{ fontSize: '0.85rem', color: '#fecaca', marginBottom: '0.5rem' }}>
+                                                                    <strong>Mismatch:</strong> {modelInfo.size_mismatch_desc}
+                                                                </div>
+                                                            )}
+                                                            {modelInfo.visual_consequences && (
+                                                                <div style={{ fontSize: '0.85rem', color: '#fecaca' }}>
+                                                                    <strong>Consequences:</strong> {modelInfo.visual_consequences}
+                                                                </div>
+                                                            )}
+                                                            {/* New VFX Mode Display */}
+                                                            {modelInfo.fit_status && (
+                                                                <div style={{ fontSize: '0.85rem', color: '#fecaca' }}>
+                                                                    <strong>Physics Status:</strong> {modelInfo.fit_status} - {modelInfo.stress_points}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Gen Prompt */}
+                                                    {activeData.analysis.gen_prompt && (
+                                                        <div style={{ borderTop: '1px solid #475569', paddingTop: '1rem' }}>
+                                                            <strong style={{ color: '#86efac', display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>[Step 4] Image Gen Instruction</strong>
+                                                            <div style={{ background: 'rgba(6, 78, 59, 0.5)', padding: '0.8rem', borderRadius: '4px', border: '1px solid #065f46', fontSize: '0.8rem', color: '#86efac', maxHeight: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+                                                                {activeData.analysis.gen_prompt}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ marginTop: '1rem', borderTop: '1px solid #475569', paddingTop: '1rem' }}>
+                                                        <strong style={{ color: '#64748b', fontSize: '0.75rem', display: 'block', marginBottom: '0.5rem' }}>RAW DATA (Backup):</strong>
+                                                        <div style={{ background: '#000', padding: '10px', borderRadius: '4px', overflowX: 'auto', border: '1px solid #333' }}>
+                                                            <pre style={{ fontSize: '0.7rem', color: '#0f0', margin: 0 }}>
+                                                                {JSON.stringify(activeData.analysis, null, 2)}
+                                                            </pre>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            )}
-
-                                            {activeData.analysis.debug_model_info && (
-                                                <div>
-                                                    <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '0.3rem' }}>[Step 2] Model Analysis:</strong>
-                                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#cbd5e1', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                                                        {activeData.analysis.debug_model_info}
-                                                    </pre>
-                                                </div>
-                                            )}
-
-                                            {activeData.analysis.gen_prompt && (
-                                                <div style={{ marginTop: '1rem', borderTop: '1px solid #4c1d95', paddingTop: '1rem' }}>
-                                                    <strong style={{ color: '#e2e8f0', display: 'block', marginBottom: '0.3rem' }}>[Step 4] Generated Prompt (To Nano Banana):</strong>
-                                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#86efac', fontSize: '0.85rem', fontFamily: 'monospace', background: '#022c22', padding: '0.5rem', borderRadius: '4px' }}>
-                                                        {activeData.analysis.gen_prompt}
-                                                    </pre>
-                                                </div>
-                                            )}
-
-                                            <div style={{ marginTop: '1rem', borderTop: '1px solid #4c1d95', paddingTop: '1rem' }}>
-                                                <strong style={{ color: '#a78bfa', fontSize: '0.8rem' }}>RAW DATA DUMP:</strong>
-                                                <pre style={{ background: '#000', padding: '10px', borderRadius: '4px', overflowX: 'auto', fontSize: '0.7rem', color: '#0f0' }}>
-                                                    {JSON.stringify(activeData.analysis, null, 2)}
-                                                </pre>
-                                            </div>
-                                        </div>
+                                            );
+                                        })()
                                     )}
 
-                                    <p style={{ color: '#94a3b8', marginBottom: '1rem' }}>Visualizing the warping engine skeletal tracking (Shared Engine).</p>
-
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                                        <div>
-                                            <h5 style={{ color: '#cbd5e1' }}>User Skeleton</h5>
-                                            <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} alt="User Skeleton Debug View" style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
-                                        </div>
-                                        <div>
-                                            <h5 style={{ color: '#cbd5e1' }}>Model Skeleton</h5>
-                                            <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} alt="Model Skeleton Debug View" style={{ maxHeight: '300px', borderRadius: '8px', border: '1px solid #334155' }} />
+                                    <div style={{ padding: '1.5rem', background: 'rgba(30, 41, 59, 0.3)', borderRadius: '8px', border: '1px solid #334155' }}>
+                                        <h4 style={{ color: '#94a3b8', marginTop: 0, marginBottom: '1rem' }}>📐 Warping Engine Metrics (Shared)</h4>
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <h5 style={{ color: '#cbd5e1', marginBottom: '0.5rem' }}>User Skeleton</h5>
+                                                {baselineData && baselineData.debug_user ? (
+                                                    <img src={`data:image/jpeg;base64,${baselineData.debug_user}`} alt="User Skeleton" style={{ maxHeight: '250px', borderRadius: '4px', border: '1px solid #475569' }} />
+                                                ) : <span style={{ color: '#64748b' }}>No Data</span>}
+                                            </div>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <h5 style={{ color: '#cbd5e1', marginBottom: '0.5rem' }}>Model Skeleton</h5>
+                                                {baselineData && baselineData.debug_model ? (
+                                                    <img src={`data:image/jpeg;base64,${baselineData.debug_model}`} alt="Model Skeleton" style={{ maxHeight: '250px', borderRadius: '4px', border: '1px solid #475569' }} />
+                                                ) : <span style={{ color: '#64748b' }}>No Data</span>}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
