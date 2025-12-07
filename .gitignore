@@ -6,6 +6,8 @@ backend/secrets/
 !tsconfig.json
 !frontend/package.json
 !frontend/tsconfig.json
+!vercel.json
+!frontend/vercel.json
 
 # Python
 venv/
