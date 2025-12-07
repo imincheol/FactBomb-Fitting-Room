@@ -1,0 +1,21 @@
+fastapi
+uvicorn
+python-multipart
+opencv-python
+mediapipe
+numpy
+openai
+google-generativeai
+google-cloud-aiplatform
+python-dotenv
+protobuf<5
+markdown<3.4
+importlib-metadata
+google-genai
+
+# Testing & Quality
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+ruff

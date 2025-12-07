@@ -1,0 +1,9 @@
+# Documentation Rules
+- 모든 문서(Documentation) 작업 시 반드시 "한글(Korean)"로 작성한다.
+- 기술적인 용어(예: Framework, Library, API 등)는 필요에 따라 영문을 병기하거나 업계 통용어를 사용하되, 설명은 한글로 한다.
+
+# Logging Rules
+- **로그 및 출력 파일 위치 (Log/Output Location)**:
+  - 스크립트, Python 백엔드, React 프론트엔드 등 모든 환경에서 발생하는 로그 파일은 반드시 `logs/` 폴더 내에 저장해야 한다.
+  - 코드를 작성할 때 `logs/` 폴더가 존재하는지 확인하고, 없으면 생성하는 로직을 포함해야 한다.
+  - 루트 디렉토리에 로그 파일을 직접 생성을 금지한다.
