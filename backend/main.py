@@ -17,22 +17,21 @@ import io
 import traceback
 
 # Import Services
-# Import Services
 try:
-    from backend.services.image_processor import process_visuals_core, get_base64_results
-    from backend.services.legacy_analysis import analyze_body_proportions
-    from backend.services.gemini_service import analyze_mix_mode, analyze_full_ai_mode
-    from backend.services.lab_service import run_experiment_flow_a, run_experiment_flow_b
+    from backend.services.mode_vision import process_visuals_core, get_base64_results, analyze_body_proportions
+    from backend.services.mode_ai import analyze_full_ai_mode
+    from backend.services.mode_pro import run_pro_mode_analysis
 except ImportError:
     import sys
     import os
     # Add the current directory to sys.path to ensure 'services' can be resolved
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     
-    from services.image_processor import process_visuals_core, get_base64_results
-    from services.legacy_analysis import analyze_body_proportions
-    from services.gemini_service import analyze_mix_mode, analyze_full_ai_mode
-    from services.lab_service import run_experiment_flow_a, run_experiment_flow_b
+    from services.mode_vision import process_visuals_core, get_base64_results, analyze_body_proportions
+    from services.mode_ai import analyze_full_ai_mode
+    from services.mode_pro import run_pro_mode_analysis
+
+
 
 app = FastAPI()
 __version__ = "1.0.0"
@@ -172,10 +171,13 @@ async def process_ai(
                 "gen_prompt": ai_vision_res.get('gen_prompt', "")
             }
 
-        elif mode == 'mix':
-            print("Running Active Mode: Mix Mode")
-            # 1. Generate Base Assets on the fly (Base Mode)
-            # We need the "Standard" result and "Debug" images to feed into Mix Mode
+
+
+        elif mode == 'pro':
+            # Pro Mode (formerly Lab Mode) - Integrated Flow
+            print(f"Running Active Mode: Pro (Hybrid Analysis)")
+            
+            # 1. Generate Base Assets on the fly (Vision Result)
             nparr_user = np.frombuffer(user_bytes, np.uint8)
             img_user_cv = cv2.imdecode(nparr_user, cv2.IMREAD_COLOR)
             nparr_model = np.frombuffer(model_bytes, np.uint8)
@@ -183,55 +185,21 @@ async def process_ai(
             
             visual_data = process_visuals_core(img_user_cv, img_model_cv)
             
-            # Convert OpenCV images to Bytes for Gemini
-            def cv_to_bytes(cv_img):
-                _, buf = cv2.imencode('.jpg', cv_img)
-                return buf.tobytes()
-
-            base_result_bytes = cv_to_bytes(visual_data['final_result'])
-            user_debug_bytes = cv_to_bytes(visual_data['user_debug'])
-            model_debug_bytes = cv_to_bytes(visual_data['model_debug'])
+            # 2. Run Pro Analysis (Vision + AI Physics)
+            result = run_pro_mode_analysis(user_bytes, model_bytes, visual_data, language=language)
             
-            # 2. Call Mix Mode Analysis
-            mix_res = analyze_mix_mode(
-                user_bytes, model_bytes, 
-                visual_data['user_ratios'], visual_data['model_ratios'],
-                visual_data['user_landmarks'], visual_data['model_landmarks'],
-                base_result_bytes, user_debug_bytes, model_debug_bytes,
-                language=language
-            )
-            
-            generated_image = mix_res.get('image')
+            lab_comment = result.get("comment", "No comment")
+            generated_image = result.get("image")
             
             active_analysis = {
-                "fact_bomb": mix_res.get('comment', 'Mix Mode Failed'),
-                "user_heads": real_user_heads,
-                "model_heads": real_model_heads,
-                "result_heads": visual_data['result_heads'], 
-                "result_ratios": visual_data['result_ratios'],
-                "gen_prompt": mix_res.get('gen_prompt', "")
-            }
-
-        elif mode == 'lab':
-            print(f"Running Active Mode: Lab ({lab_flow})")
-            lab_result = {"comment": "Lab error", "image": None}
-            
-            if lab_flow == 'exp_a':
-                # Flow A: Model Image + User Ratios (Reality Check)
-                lab_result = run_experiment_flow_a(user_ratios, model_ratios, model_bytes)
-            elif lab_flow == 'exp_b':
-                # Flow B: Model Clothes + User Ratios (Fit Check)
-                lab_result = run_experiment_flow_b(user_ratios, model_ratios, model_bytes)
-            
-            lab_comment = lab_result.get("comment", "No comment")
-            generated_image = lab_result.get("image")
-            
-            active_analysis = {
-                "fact_bomb": f"[🧪 Lab Report]\n{lab_comment}",
+                "fact_bomb": f"[🧪 Pro Report]\n{lab_comment}",
                 "user_heads": real_user_heads,
                 "model_heads": real_model_heads,
                 "result_heads": 0, 
-                "result_ratios": {}
+                "result_ratios": {},
+                "debug_user_info": result.get("debug_user_info", ""),
+                "debug_model_info": result.get("debug_model_info", ""),
+                "gen_prompt": result.get("gen_prompt", "")
             }
 
         return {
