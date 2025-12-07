@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+from google import genai
 import PIL.Image
 import io
 # Replicate for Flux.1 (Image Gen)
@@ -19,15 +19,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# We still use Gemini for Text Analysis (Fact Bomb)
-if os.environ.get("GEMINI_API_KEY"):
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY")) 
-
-def get_gemini_model(model_name="gemini-2.5-flash"):
-    try:
-        return genai.GenerativeModel(model_name)
-    except:
-        return None
+def get_gemini_client():
+    if os.environ.get("GEMINI_API_KEY"):
+        return genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    return None
 
 def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads, language="ko"):
     """
@@ -64,17 +59,18 @@ def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads, languag
     """
     
     try:
-        model = get_gemini_model("gemini-2.0-flash")
-        response = model.generate_content(prompt)
+        client = get_gemini_client()
+        response = client.models.generate_content(
+            model="gemini-3-pro-preview",
+            contents=prompt
+        )
         return response.text.strip()
     except Exception as e:
         return f"Gemini Error: {str(e)}"
 
-from google import genai as new_genai
-
 def generate_gemini_image(prompt, reference_images=None):
     """
-    Generates an image using Gemini (Nano Banana / gemini-2.5-flash-image).
+    Generates an image using Gemini 3 (gemini-3-pro-image-preview).
     Supports reference images.
     """
     if not os.environ.get("GEMINI_API_KEY"):
@@ -82,9 +78,11 @@ def generate_gemini_image(prompt, reference_images=None):
 
     try:
         # Initialize the new client
-        client = new_genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        client = get_gemini_client()
+        if not client:
+             return None, "Missing GEMINI_API_KEY"
         
-        print(f"[Gemini] Generating (Nano Banana)... Prompt: {prompt[:50]}...")
+        print(f"[Gemini] Generating (Gemini 3 Pro)... Prompt: {prompt[:50]}...")
         
         # Prepare contents
         contents = [prompt]
@@ -94,19 +92,22 @@ def generate_gemini_image(prompt, reference_images=None):
              print(f"[Gemini] Including {len(reference_images)} reference images.")
              contents.extend(reference_images)
 
-        # Use gemini-2.5-flash-image (Nano Banana) as per documentation
-        model_name = "gemini-2.5-flash-image"
+        # Use gemini-3-pro-image-preview
+        model_name = "gemini-3-pro-image-preview"
 
         response = None
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                # Note: valid response_modalities for this model might be implicitly TEXT/IMAGE
-                # The docs don't strictly require config for basic usage, but we can add it to be safe if needed.
-                # For now, following the simple doc example.
+                # Configure for image generation
+                config = genai.types.GenerateContentConfig(
+                    response_modalities=["TEXT", "IMAGE"]
+                )
+                
                 response = client.models.generate_content(
                     model=model_name,
-                    contents=contents
+                    contents=contents,
+                    config=config
                 )
                 break
             except Exception as e:
@@ -137,7 +138,7 @@ def generate_gemini_image(prompt, reference_images=None):
 
 def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
     """
-    Full AI Mode: Vision Analysis (Gemini) + Image Generation (Imagen 3).
+    Full AI Mode: Vision Analysis (Gemini 3) + Image Generation (Gemini 3 Image).
     """
     if not os.environ.get("GEMINI_API_KEY"): 
          return {
@@ -146,13 +147,15 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
          }
 
     try:
-        # 1. Vision Analysis (Gemini 2.0 Flash) to understand Scene + Create Gen Prompt
+        # 1. Vision Analysis (Gemini 3 Pro) to understand Scene + Create Gen Prompt
         img_user = PIL.Image.open(io.BytesIO(user_img_bytes))
         img_model = PIL.Image.open(io.BytesIO(model_img_bytes))
         
-        model = get_gemini_model("gemini-2.0-flash-exp") # Explicitly use Flash Exp or Pro
-        if not model:
-             model = get_gemini_model("gemini-1.5-flash") # Fallback
+        client = get_gemini_client()
+        if not client:
+             return fallback_response(0, 0, "[Full AI] Gemini Client Init Failed")
+        
+        model_name = "gemini-3-pro-preview"
         
         lang_target = "Korean"
         if language == "vi": lang_target = "Vietnamese"
@@ -160,51 +163,74 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
 
         # Update prompt to be compatible with Image-to-Image logic
         analysis_prompt = [
-            "Role: High-level Fashion AI Expert specializing in Virtual Try-On.",
-            "Task: Create a master prompt for an Image Generator to perform a 'Body Swap' Virtual Fitting.",
-            "STEP 1 [User Analysis]: Analyze Image 1 (User). Identify physical specs: estimated Height, Weight, Body Type, and Proportions.",
-            "STEP 2 [Model Analysis]: Analyze Image 2 (Model).",
-            "   - Identify 'Model Person' specs: Height, Weight, Body Type, Proportions.",
-            "   - Identify 'Model Pose': Describe the exact pose of the model.",
-            "   - Identify 'Model Clothing': Note the clothing's exact cut, texture, and size.",
-            "STEP 3 [Critique]: textual comparison.",
-            f"   - Language: {lang_target}",
-            "   - Tone: Fact-based, Humorous.",
-            "STEP 4 [Gen Prompt Creation]: Write a prompt for the Image Generator following this logic:",
-            "   - Logic: Replace the 'Model Person' (specs from Step 2) with the 'User Person' (specs from Step 1).",
-            "   - Pose: MUST Maintain the EXACT POSE of Image 2 (Model).",
-            "   - Visualization: A person with User's body specs (Height/Weight/Type) standing in Model's exact Pose, wearing Model's Clothes.",
-            "   - Quality: Photorealistic, High Resolution.",
-            "CONTEXT: This is a 'FactBomb Fitting Room'. The goal is REALITY CHECKS, not beautification.",
-            "CRITICAL: Do NOT alter the clothes to fit the user perfectly. If the User is larger/smaller, show the clothes fitting tightly or loosely as they would in real life. Keep the 'Model Clothing' size/shape ORIGINAL.",
-            "Return JSON: {",
-            "  'user_heads': number, 'model_heads': number,",
-            "  'debug_user_info': string (Summary of Step 1 Analysis),",
-            "  'debug_model_info': string (Summary of Step 2 Analysis),",
-            f"  'comment': string (Fact-based Humorous {lang_target} Critique),",
-            "  'gen_prompt': string (The Detailed English Prompt described in Step 4)"
+            "Role: Expert VFX Artist specializing in Digital Body Morphing and Cloth Physics.",
+            "Task: Generate a realistic simulation image based on two input images.",
+            "",
+            "**INPUT DATA MAPPING (CRITICAL):**",
+            "1. [IMAGE 1 - REFERENCE ONLY]: Use ONLY the **Body Volume/Mass** and **BMI**. (IGNORE the face, IGNORE the clothes, IGNORE the background).",
+            "2. [IMAGE 2 - BASE TARGET]: Use the **Face**, **Identity**, **Pose**, **Clothing Design**, **Clothing Size**, and **Background**.",
+            "",
+            "**GENERATION GOAL:**",
+            "Render the person from [IMAGE 2] but strictly morph their body shape to match the heavy proportions of [IMAGE 1].",
+            "",
+            "**STEP-BY-STEP INSTRUCTIONS:**",
+            "1. **Identity Lock:** Draw the face and head EXACTLY as seen in [IMAGE 2]. The person must remain the male model. DO NOT swap the face with [IMAGE 1].",
+            "2. **Body Morphing:** Expand the torso, waist, hips, and limbs of the model to match the silhouette and volume of the person in [IMAGE 1].",
+            "3. **The 'FactBomb' Fit (Physics Engine):**",
+            "   - The suit is still Size M (from Image 2), but the body is now Size XL/XXL (from Image 1).",
+            "   - **Visual Consequence:** The suit must look extremely tight.",
+            "   - **Belly:** The jacket button must be pulling hard, creating an 'X' shape wrinkle. There should be a gap showing the shirt underneath.",
+            "   - **Sleeves:** Because the shoulders and arms are wider, the sleeves must ride up, exposing the wrists.",
+            "   - **Trousers:** The thighs should look like they are bursting the seams. The fabric is stretched smooth due to tension.",
+            "4. **Environment:** Keep the clean studio background from [IMAGE 2].",
+            "",
+            "**OUTPUT JSON FORMAT:**",
+            "Return the analysis and the final generative prompt in this JSON structure:",
+            "{",
+            "  \"metrics\": {",
+            "    \"user_body_analysis\": {",
+            "      \"shape_desc\": \"string (e.g., Heavy pear shape, Protruding belly)\",",
+            "      \"volume_factor\": \"string (e.g., Body mass is approx 1.5x of the model)\"",
+            "    },",
+            "    \"clothing_physics\": {",
+            "      \"stress_points\": \"string (e.g., Button hole, Shoulder seams, Thigh inseam)\",",
+            "      \"fit_status\": \"string (e.g., Critically Undersized / Bursting)\"",
+            "    }",
+            "  },",
+            f"  \"fact_bomb_comment\": \"string (A short, humorous reality check comment in {lang_target} regarding the tight fit)\",",
+            "  \"gen_prompt\": \"string (The final prompt to generate the image. MUST include visual descriptions of tightness. AND MUST Append a Negative Prompt instruction at the end: 'Negative prompt: perfect fit, tailored suit, comfortable fit, loose clothing, slimming effect, correct sleeve length, fashion model body, photoshopped perfection'.)\"",
             "}",
             img_user, img_model
         ]
         
-        response = model.generate_content(analysis_prompt)
+        response = client.models.generate_content(
+            model=model_name,
+            contents=analysis_prompt
+        )
         text = response.text.strip()
         
         # Parse JSON
-        import json
         import re
+        import ast
         data = {}
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
+            json_str = match.group(0)
             try:
-                data = json.loads(match.group(0))
-                # Log Debug Info
-                print(f"\n[DEBUG] Gemini Analysis - User: {data.get('debug_user_info', 'N/A')}")
-                print(f"[DEBUG] Gemini Analysis - Model: {data.get('debug_model_info', 'N/A')}\n")
-            except:
-                data = {"comment": text, "gen_prompt": "A stylish person"}
+                data = json.loads(json_str)
+                print(f"[DEBUG] Gemini Analysis Success (JSON)")
+            except json.JSONDecodeError:
+                try:
+                    # Fallback for single quotes or lax JSON
+                    data = ast.literal_eval(json_str)
+                    print(f"[DEBUG] Gemini Analysis Success (AST)")
+                    # Ensure it's a dict
+                    if not isinstance(data, dict): raise ValueError("Parsed data is not a dict")
+                except:
+                     print(f"[DEBUG] JSON Parsing Failed completely. Text: {text[:50]}...")
+                     data = {"fact_bomb_comment": text, "gen_prompt": "A stylish person"}
         else:
-            data = {"comment": text, "gen_prompt": "A stylish person"}
+            data = {"fact_bomb_comment": text, "gen_prompt": "A stylish person"}
             
         # 2. Image Generation (Imagen 3)
         gen_prompt = data.get("gen_prompt", "Fashion model wearing stylish clothes")
@@ -213,21 +239,29 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
         # We rely on Gemini's detailed description in 'gen_prompt'.
         full_gen_prompt = f"{gen_prompt}, photorealistic, 8k, high quality"
 
-        generated_b64, error_msg = generate_gemini_image(full_gen_prompt, reference_images=None)
+        generated_b64, error_msg = generate_gemini_image(full_gen_prompt, reference_images=[img_user, img_model])
 
         
-        final_comment = data.get("comment", "Analysis complete.")
+        final_comment = data.get("fact_bomb_comment", data.get("comment", "Analysis complete."))
         if error_msg:
              final_comment += f"\n\n[System Error] {error_msg}"
-
+        
+        # Extract metrics safely (Updated for new structure)
+        metrics = data.get("metrics", {})
+        # Remap new keys to the variables we pass to the return dict
+        # New structure: metrics: { user_body_analysis: {}, clothing_physics: {} }
+        user_body = metrics.get("user_body_analysis", {})
+        clothing_physics = metrics.get("clothing_physics", {})
+        
+        # For backward compat in the return dict (if needed), or just dump the new json
         return {
-            "user_heads": data.get("user_heads", 0),
-            "model_heads": data.get("model_heads", 0),
+            "user_heads": 0, # Deprecated in VFX mode, set 0
+            "model_heads": 0,
             "comment": final_comment,
             "image": generated_b64,
-            "debug_user_info": data.get("debug_user_info", ""),
-            "debug_model_info": data.get("debug_model_info", ""),
-            "gen_prompt": data.get("gen_prompt", "")
+            "debug_user_info": json.dumps(user_body, indent=2, ensure_ascii=False),
+            "debug_model_info": json.dumps(clothing_physics, indent=2, ensure_ascii=False),
+            "gen_prompt": gen_prompt
         }
 
     except Exception as e:
