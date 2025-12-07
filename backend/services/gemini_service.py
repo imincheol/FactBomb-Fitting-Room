@@ -1,5 +1,6 @@
 import os
 from google import genai
+from google.genai import types
 import PIL.Image
 import io
 # Replicate for Flux.1 (Image Gen)
@@ -24,49 +25,139 @@ def get_gemini_client():
         return genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
     return None
 
-def analyze_mix_mode(user_ratios, model_ratios, user_heads, model_heads, language="ko"):
+def analyze_mix_mode(user_bytes, model_bytes, user_ratios, model_ratios, user_landmarks, model_landmarks, base_result_bytes, user_debug_bytes, model_debug_bytes, language="ko"):
     """
-    Mix Mode: We provide the numeric data (calculated by our Algo).
-    Gemini generates the comment based on these numbers.
+    Mix Mode: Base Mode(Geometric) + Generative AI(Physics/Realism)
+    - Raw Data is minimized to text summary, complex spatial info is passed via Visuals.
     """
     if not os.environ.get("GEMINI_API_KEY"):
-         return fallback_response(user_heads, model_heads, "[Mix 모드 (Mock)] API 키가 없어서 흉내만 냅니다.")
+         return {
+             "comment": "[Mix Mode (Mock)] API Key Missing.", 
+             "image": None,
+             "debug_info": "API Key Missing"
+         }
 
-    lang_instruction = "Korean"
-    if language == "vi":
-        lang_instruction = "Vietnamese (Tiếng Việt)"
-    elif language == "en":
-        lang_instruction = "English"
-
-    prompt = f"""
-    [Persona]
-    You are a brutally honest but trendy K-Fashion Stylist (like a 'Fact Bomber').
-    Your audience is trendy people who care about fashion metrics.
-    
-    [Task]
-    Compare the User's stats vs Model's stats and deliver a "Fact Bomb" critique.
-    
-    [Data]
-    - User Heads: {user_heads:.1f} (Real)
-    - Model Heads: {model_heads:.1f} (Ideal)
-    
-    [Rules]
-    1. Language: {lang_instruction}. Trendy, Sarcastic style.
-    2. Length: MAX 2-3 short sentences. Extremely concise.
-    3. Tone: If user is good, praise highly. If bad, roast gently but realistically.
-    
-    OUTPUT ONLY THE TEXT. NO PREAMBLE.
-    """
-    
     try:
-        client = get_gemini_client()
+        # 1. Load Images (Bytes -> PIL Image)
+        img_user = PIL.Image.open(io.BytesIO(user_bytes))
+        img_model = PIL.Image.open(io.BytesIO(model_bytes))
+        img_base_result = PIL.Image.open(io.BytesIO(base_result_bytes))
+        img_user_debug = PIL.Image.open(io.BytesIO(user_debug_bytes))
+        img_model_debug = PIL.Image.open(io.BytesIO(model_debug_bytes))
+
+        # 2. Gemini Client Init
+        client = get_gemini_client() # Use shared helper
+
+        # 3. Language Settings
+        lang_target = "Korean"
+        if language == "vi": lang_target = "Vietnamese (Tiếng Việt)"
+        elif language == "en": lang_target = "English"
+
+        # 4. [Data Diet] Key Summary Generation
+        # Calculate Heads from ratios
+        u_heads = round(1 / user_ratios.get('head_stat_ratio', 0.15), 1)
+        m_heads = round(1 / model_ratios.get('head_stat_ratio', 0.15), 1)
+        
+        slim_data_summary = {
+            "user_metrics": {
+                "head_ratio_heads": u_heads,
+                "estimated_bmi_shape": "Wide" if user_ratios.get('shoulder_heads', 2.5) > 3.0 else "Average"
+            },
+            "model_metrics": {
+                "head_ratio_heads": m_heads,
+                "original_fit": "Slim/Regular Fit"
+            },
+            "comparison_logic": {
+                "user_is_wider": True if user_ratios.get('shoulder_heads', 0) > model_ratios.get('shoulder_heads', 0) else False,
+                "user_head_is_larger": True if u_heads < m_heads else False
+            }
+        }
+        data_block_str = f"**ANALYTICAL DATA SUMMARY:**\n{json.dumps(slim_data_summary, indent=2)}"
+
+        # 5. Construct Prompt (Physics & Volume Focused)
+        instruction_text = [
+            "Role: Expert 3D Character Artist & Physics Simulation Specialist.",
+            "Task: Generate a Hyper-Realistic 'Virtual Try-On' image. Prioritize Physical Reality over Aesthetic.",
+            "",
+            "**VISUAL INPUTS (Your Primary Spatial Data):**",
+            "1. [IMAGE 1 - USER BODY]: Reference for MASS and VOLUMN (Z-Axis/Girth). Look at the belly/chest depth.",
+            "2. [IMAGE 2 - MODEL STYLE]: Reference for Outfit design and Lighting.",
+            "3. [IMAGE 3 - USER SKELETON]: **Visual Measure.** Yellow rulers show the actual Head-to-Body ratio.",
+            "4. [IMAGE 4 - MODEL SKELETON]: **Visual Measure.** Compare this skeleton with Image 3.",
+            "5. [IMAGE 5 - GEOMETRIC BLUEPRINT]: The 'Draft' shape. It has the correct proportions but lacks texture.",
+            "",
+            data_block_str, # Injected Summary
+            "",
+            "**CRITICAL PHYSICS SIMULATION (REALITY CHECK):**",
+            "1. **Volume & Closure Logic (The 'Button' Check):**",
+            "   - Look at Image 1 (User's Girth). Compare it to Image 2 (Outfit Size).",
+            "   - IF the User is significantly wider/heavier: The jacket/shirt CANNOT button up.",
+            "   - **ACTION:** Render the jacket OPEN or buttons BURSTING. Show the shirt pulling apart or the undershirt visible.",
+            "2. **Fabric Tension:** Fabric must follow the 'Geometric Blueprint' (Image 5) shape but behave like real cloth under stress. Create horizontal wrinkles across the belly.",
+            "",
+            "**OUTPUT JSON FORMAT:**",
+            "{",
+            f"  \"comment\": \"string ({lang_target} comment. Use the 'Summary Metrics' and Skeleton visuals to roast the fit. e.g., '데이터상 고객님의 상체가 모델보다 훨씬 큽니다. 단추는 포기하고 오픈 스타일로 가시죠!')\",",
+            "  \"gen_prompt\": \"string (The Final Image Prompt. MUST describe: 'Jacket unbuttoned/gaping', 'Tight fit', 'Stomach protruding', 'Fabric tension'. Do NOT describe a perfectly fitted suit.)\"",
+            "}"
+        ]
+        
+        main_prompt_str = "\n".join(instruction_text)
+
+        # 6. Assemble Contents (Text + Images)
+        contents = [
+            main_prompt_str,
+            img_user, img_model, img_user_debug, img_model_debug, img_base_result
+        ]
+        
+        # 7. Vision Analysis & Prompt Gen (Reasoning Step)
+        # Using Gemini 3 Pro for best reasoning
+        analysis_model = "gemini-3-pro-preview" 
+        
         response = client.models.generate_content(
-            model="gemini-3-pro-preview",
-            contents=prompt
+            model=analysis_model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json" # Enforce JSON
+            )
         )
-        return response.text.strip()
+        
+        # 8. Parse JSON (Safe Method)
+        try:
+            data = json.loads(response.text)
+        except json.JSONDecodeError:
+            data = {"comment": "분석 결과를 처리하는 중 오류가 발생했습니다.", "gen_prompt": "A realistic photo of a person wearing a suit that is too tight."}
+
+        gen_prompt = data.get("gen_prompt", "Photorealistic fashion shot")
+        final_comment = data.get("comment", "분석 완료.")
+        
+        print(f"[Mix Mode] Generated Prompt: {gen_prompt[:100]}...")
+
+        # 9. Image Generation (Creation Step)
+        ref_images = [img_model, img_base_result] 
+        
+        # Negative Prompt
+        negative_prompt = "perfect fit, tailored suit, slimming effect, loose clothing, photoshop, illustration, cartoon"
+        final_gen_prompt = f"{gen_prompt}, 8k, highly detailed, realistic texture. Negative prompt: {negative_prompt}"
+        
+        generated_b64, error_msg = generate_gemini_image(final_gen_prompt, reference_images=ref_images)
+        
+        if error_msg:
+             final_comment += f"\n(이미지 생성 중 오류: {error_msg})"
+
+        return {
+            "comment": final_comment,
+            "image": generated_b64,
+            "gen_prompt": gen_prompt
+        }
+
     except Exception as e:
-        return f"Gemini Error: {str(e)}"
+        print(f"Mix Mode Error: {e}")
+        return {
+             "comment": f"시스템 오류가 발생했습니다: {str(e)}", 
+             "image": None,
+             "gen_prompt": ""
+        }
 
 def generate_gemini_image(prompt, reference_images=None):
     """
@@ -161,44 +252,35 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
         if language == "vi": lang_target = "Vietnamese"
         elif language == "en": lang_target = "English"
 
-        # Update prompt to be compatible with Image-to-Image logic
+        # Update prompt to be compatible with Proportion Transfer logic
         analysis_prompt = [
-            "Role: Expert VFX Artist specializing in Digital Body Morphing and Cloth Physics.",
-            "Task: Generate a realistic simulation image based on two input images.",
+            "Role: AI Body Proportion Specialist & Image Synthesizer.",
+            "Task: Transfer the User's (Image 1) body proportions onto the Model's (Image 2) body while strictly preserving the Model's face and gender identity.",
             "",
-            "**INPUT DATA MAPPING (CRITICAL):**",
-            "1. [IMAGE 1 - REFERENCE ONLY]: Use ONLY the **Body Volume/Mass** and **BMI**. (IGNORE the face, IGNORE the clothes, IGNORE the background).",
-            "2. [IMAGE 2 - BASE TARGET]: Use the **Face**, **Identity**, **Pose**, **Clothing Design**, **Clothing Size**, and **Background**.",
+            "**INPUT PROCESSING:**",
+            "1. [IMAGE 1 - USER]: Source of **Proportions, Ratios, and BMI**. (Analyze Head-to-Body ratio, Leg-to-Torso ratio, Shoulder-to-Hip ratio).",
+            "2. [IMAGE 2 - MODEL]: Source of **Face, Gender, Outfit, and Background**.",
             "",
-            "**GENERATION GOAL:**",
-            "Render the person from [IMAGE 2] but strictly morph their body shape to match the heavy proportions of [IMAGE 1].",
-            "",
-            "**STEP-BY-STEP INSTRUCTIONS:**",
-            "1. **Identity Lock:** Draw the face and head EXACTLY as seen in [IMAGE 2]. The person must remain the male model. DO NOT swap the face with [IMAGE 1].",
-            "2. **Body Morphing:** Expand the torso, waist, hips, and limbs of the model to match the silhouette and volume of the person in [IMAGE 1].",
-            "3. **The 'FactBomb' Fit (Physics Engine):**",
-            "   - The suit is still Size M (from Image 2), but the body is now Size XL/XXL (from Image 1).",
-            "   - **Visual Consequence:** The suit must look extremely tight.",
-            "   - **Belly:** The jacket button must be pulling hard, creating an 'X' shape wrinkle. There should be a gap showing the shirt underneath.",
-            "   - **Sleeves:** Because the shoulders and arms are wider, the sleeves must ride up, exposing the wrists.",
-            "   - **Trousers:** The thighs should look like they are bursting the seams. The fabric is stretched smooth due to tension.",
-            "4. **Environment:** Keep the clean studio background from [IMAGE 2].",
+            "**GENERATION LOGIC (Proportion Transfer):**",
+            "1. **Analyze Gender:** Identify the gender of the person in Image 2 (Male/Female/Non-binary). The output must respect this gender.",
+            "2. **Analyze User's Ratio:** Calculate the User's physical ratios from Image 1 (e.g., 6 heads tall, short legs, wider hips, narrow shoulders).",
+            "3. **Apply to Model:** Resize and warp the **Model's body parts** to match the User's calculated ratios exactly.",
+            "   - **Head Size:** If User's head is large relative to body, scale up the Model's head size.",
+            "   - **Limb Length:** Match the User's leg and arm lengths (shorten or lengthen).",
+            "   - **Volume/Width:** Match the User's specific width (e.g., wider belly, wider hips, narrower shoulders).",
+            "4. **Identity Preservation (CRITICAL):** Keep the **Model's Original Face and Gender** exactly as seen in Image 2. Do NOT swap faces.",
+            "5. **Clothing Interaction:** The outfit must wrap around this new \"distorted\" body proportion. It should look realistic but potentially unflattering due to the mismatched proportions (e.g., pants bunching up, sleeves too long/short, buttons straining).",
             "",
             "**OUTPUT JSON FORMAT:**",
-            "Return the analysis and the final generative prompt in this JSON structure:",
             "{",
-            "  \"metrics\": {",
-            "    \"user_body_analysis\": {",
-            "      \"shape_desc\": \"string (e.g., Heavy pear shape, Protruding belly)\",",
-            "      \"volume_factor\": \"string (e.g., Body mass is approx 1.5x of the model)\"",
-            "    },",
-            "    \"clothing_physics\": {",
-            "      \"stress_points\": \"string (e.g., Button hole, Shoulder seams, Thigh inseam)\",",
-            "      \"fit_status\": \"string (e.g., Critically Undersized / Bursting)\"",
-            "    }",
+            "  \"analysis\": {",
+            "    \"detected_gender_model\": \"string (e.g., Female)\",",
+            "    \"user_ratio\": \"number (e.g., 5.8 heads)\",",
+            "    \"model_original_ratio\": \"number (e.g., 8.2 heads)\",",
+            "    \"key_change_point\": \"string (e.g., Head size scaled up 15%, Legs shortened, Hips widened)\"",
             "  },",
-            f"  \"fact_bomb_comment\": \"string (A short, humorous reality check comment in {lang_target} regarding the tight fit)\",",
-            "  \"gen_prompt\": \"string (The final prompt to generate the image. MUST include visual descriptions of tightness. AND MUST Append a Negative Prompt instruction at the end: 'Negative prompt: perfect fit, tailored suit, comfortable fit, loose clothing, slimming effect, correct sleeve length, fashion model body, photoshopped perfection'.)\"",
+            f"  \"fact_bomb_comment\": \"string (Humorous Korean comment. e.g., '모델분은 8등신인데... 고객님 비율을 적용하니 머리가 꽤 커졌네요! 현실적인 핏입니다.')\",",
+            "  \"gen_prompt\": \"string (Final prompt: A photo of the [GENDER] MODEL from Image 2, but modified to have the BODY PROPORTIONS of Image 1. The face remains the original [GENDER] model's face. The body is morphed: Head is LARGER, legs are SHORTER/LONGER, and width is adjusted to match User's ratio. Wearing the same outfit, but the fit reflects the new proportions.)\"",
             "}",
             img_user, img_model
         ]
@@ -246,12 +328,18 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
         if error_msg:
              final_comment += f"\n\n[System Error] {error_msg}"
         
-        # Extract metrics safely (Updated for new structure)
-        metrics = data.get("metrics", {})
-        # Remap new keys to the variables we pass to the return dict
-        # New structure: metrics: { user_body_analysis: {}, clothing_physics: {} }
-        user_body = metrics.get("user_body_analysis", {})
-        clothing_physics = metrics.get("clothing_physics", {})
+        # Extract analysis data (Updated for Proportion Transfer mode)
+        analysis = data.get("analysis", {})
+        
+        user_body = {
+            "user_ratio": analysis.get("user_ratio", "N/A"),
+            "key_change_point": analysis.get("key_change_point", "N/A")
+        }
+        
+        model_info = {
+            "detected_gender_model": analysis.get("detected_gender_model", "N/A"),
+            "model_original_ratio": analysis.get("model_original_ratio", "N/A")
+        }
         
         # For backward compat in the return dict (if needed), or just dump the new json
         return {
@@ -260,7 +348,7 @@ def analyze_full_ai_mode(user_img_bytes, model_img_bytes, language="ko"):
             "comment": final_comment,
             "image": generated_b64,
             "debug_user_info": json.dumps(user_body, indent=2, ensure_ascii=False),
-            "debug_model_info": json.dumps(clothing_physics, indent=2, ensure_ascii=False),
+            "debug_model_info": json.dumps(model_info, indent=2, ensure_ascii=False),
             "gen_prompt": gen_prompt
         }
 
