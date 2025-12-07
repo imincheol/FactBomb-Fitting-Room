@@ -14,8 +14,7 @@ function LabPage() {
 
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [mode, setMode] = useState('legacy') // 'legacy' | 'lab' | 'full_ai'
-    const [labFlow, setLabFlow] = useState('exp_a') // 'exp_a' | 'exp_b'
+    const [mode, setMode] = useState('basic') // 'basic' | 'pro' | 'full_ai'
 
     const [baselineData, setBaselineData] = useState(null)
     const [activeData, setActiveData] = useState(null)
@@ -145,7 +144,7 @@ function LabPage() {
         }
 
         // STAGE 2: AI Analysis (If applicable)
-        if (mode === 'legacy') {
+        if (mode === 'basic') {
             setActiveData(currentBaseline.baseline)
         } else {
             setIsAiLoading(true)
@@ -154,7 +153,6 @@ function LabPage() {
                 aiFormData.append('user_image', userImage.file)
                 aiFormData.append('model_image', modelImage.file)
                 aiFormData.append('mode', mode)
-                if (mode === 'lab') aiFormData.append('lab_flow', labFlow)
                 aiFormData.append('language', i18n.language)
 
                 // Pass meta data
@@ -374,49 +372,28 @@ function LabPage() {
                 {/* Mode Selector */}
                 <div className="mode-selector" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }} role="radiogroup" aria-label="Analysis Mode Selection">
 
-                    {/* 1. Legacy */}
+                    {/* 1. Vision Mode (formerly Basic/Warping) */}
                     <label style={{
                         cursor: 'pointer',
                         padding: '0.5rem 1rem',
                         borderRadius: '2rem',
-                        background: mode === 'legacy' ? '#f472b6' : 'transparent',
+                        background: mode === 'basic' ? '#f472b6' : 'transparent',
                         border: '1px solid #f472b6',
-                        color: mode === 'legacy' ? '#fff' : '#f472b6',
+                        color: mode === 'basic' ? '#fff' : '#f472b6',
                         transition: 'all 0.3s ease'
                     }}>
                         <input
                             type="radio"
                             name="mode"
-                            value="legacy"
-                            checked={mode === 'legacy'}
+                            value="basic"
+                            checked={mode === 'basic'}
                             onChange={(e) => setMode(e.target.value)}
                             style={{ display: 'none' }}
                         />
-                        📊 Standard
+                        📊 Vision Mode
                     </label>
 
-                    {/* 2. Lab Mode (Experiment) */}
-                    <label style={{
-                        cursor: 'pointer',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '2rem',
-                        background: mode === 'lab' ? '#818cf8' : 'transparent',
-                        border: '1px solid #818cf8',
-                        color: mode === 'lab' ? '#fff' : '#818cf8',
-                        transition: 'all 0.3s ease'
-                    }}>
-                        <input
-                            type="radio"
-                            name="mode"
-                            value="lab"
-                            checked={mode === 'lab'}
-                            onChange={(e) => setMode(e.target.value)}
-                            style={{ display: 'none' }}
-                        />
-                        🧪 Lab Mode
-                    </label>
-
-                    {/* 3. Full AI (Generation) */}
+                    {/* 2. AI Mode (Generation) */}
                     <label style={{
                         cursor: 'pointer',
                         padding: '0.5rem 1rem',
@@ -434,38 +411,30 @@ function LabPage() {
                             onChange={(e) => setMode(e.target.value)}
                             style={{ display: 'none' }}
                         />
-                        🤖 Full AI (Pure Gen)
+                        🤖 AI Mode
+                    </label>
+
+                    {/* 3. Pro Mode (Hybrid) */}
+                    <label style={{
+                        cursor: 'pointer',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '2rem',
+                        background: mode === 'pro' ? '#818cf8' : 'transparent',
+                        border: '1px solid #818cf8',
+                        color: mode === 'pro' ? '#fff' : '#818cf8',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        <input
+                            type="radio"
+                            name="mode"
+                            value="pro"
+                            checked={mode === 'pro'}
+                            onChange={(e) => setMode(e.target.value)}
+                            style={{ display: 'none' }}
+                        />
+                        🧪 Pro Mode
                     </label>
                 </div>
-
-                {/* Lab Experiment Selector (Only visible in Lab Mode) */}
-                {mode === 'lab' && (
-                    <div className="lab-options" style={{ marginBottom: '2rem', background: '#1e293b', padding: '1rem', borderRadius: '0.5rem', border: '1px dashed #818cf8' }}>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>🔬 Select Experiment Flow:</p>
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }} role="radiogroup" aria-label="Lab Experiment Flow">
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#cbd5e1' }}>
-                                <input
-                                    type="radio"
-                                    name="labFlow"
-                                    value="exp_a"
-                                    checked={labFlow === 'exp_a'}
-                                    onChange={(e) => setLabFlow(e.target.value)}
-                                />
-                                <strong>Flow A:</strong> Body Data Driven <br /><span style={{ fontSize: '0.8em', color: '#64748b' }}>(내 몸 수치로 변형해줘)</span>
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#cbd5e1' }}>
-                                <input
-                                    type="radio"
-                                    name="labFlow"
-                                    value="exp_b"
-                                    checked={labFlow === 'exp_b'}
-                                    onChange={(e) => setLabFlow(e.target.value)}
-                                />
-                                <strong>Flow B:</strong> Cloth Data Driven <br /><span style={{ fontSize: '0.8em', color: '#64748b' }}>(옷 데이터만 가져와서 입혀줘)</span>
-                            </label>
-                        </div>
-                    </div>
-                )}
 
                 <button
                     className="action-btn"
@@ -491,9 +460,9 @@ function LabPage() {
                         />
 
                         {/* Right: Active Mode (only if different from baseline) */}
-                        {mode !== 'legacy' && (
+                        {mode !== 'basic' && (
                             <ResultCard
-                                title={`✨ Active: ${mode === 'lab' ? 'Lab Mode' : 'Full AI'}`}
+                                title={`✨ Active: ${mode === 'pro' ? 'Pro Mode' : 'Full AI'}`}
                                 data={activeData}
                                 isBaseline={false}
                                 isLoading={isAiLoading}
@@ -501,7 +470,7 @@ function LabPage() {
                         )}
 
                         {/* If Legacy mode, we can show it twice or just once. Let's show duplicate for layout balance as requested */}
-                        {mode === 'legacy' && baselineData && (
+                        {mode === 'basic' && baselineData && (
                             <ResultCard
                                 title="📊 Standard (Same)"
                                 data={baselineData}
